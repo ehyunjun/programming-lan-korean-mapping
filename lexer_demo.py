@@ -20,7 +20,7 @@ def simple_lexer(text: str):
 	for w in words:
 		if w in KEYWORDS:
 			tokens.append(("KEYWORD", w))
-		elif w in ["(", ")", ":", ","]:
+		elif w in ["(", ")", ":", ",", "=", "+", "-", "*", "/"]:
 			tokens.append(("SYMBOL", w))
 		elif w.isdigit():
 			tokens.append(("NUMBER", w))
@@ -31,7 +31,7 @@ def simple_lexer(text: str):
 
 if __name__ == "__main__":
 	# 테스트용 한글 코드 한줄
-	code = "함수 더하기(a,b):"
+	code = "값 = 1 + 2"
 
 	tokens = simple_lexer(code)
 
