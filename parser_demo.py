@@ -4,6 +4,7 @@
 # 1) simple_lexer 로 토큰 리스트로 만들고
 # 2) Parser 로 AST(Program/Assign/BinOp/Number/Name) 트리로 바꿔보는 데모
 
+from codegen_demo import gen_program
 from lexer_demo import simple_lexer
 from ast_demo import Program, Assign, Name, Number, BinOp, print_program
 
@@ -95,7 +96,7 @@ class Parser:
 		
 if __name__ == "__main__":
 	# 1) 한글 코드 한 줄
-	code = "값 = a + 3"
+	code = "값 = 1 + 2"
 
 	# 2) 렉서로 토큰 뽑기
 	tokens = simple_lexer(code)
@@ -109,3 +110,13 @@ if __name__ == "__main__":
 
 	print("\nAst 구조:")
 	print_program(program_ast)
+
+	# 4) AST -> 파이썬 코드 생성
+	py_code = gen_program(program_ast)
+	print("\n생성된 파이썬 코드:")
+	print(py_code)
+
+	# 5) 실제로 실행해보기
+	env = {}
+	exec(py_code, env, env)
+	print("실행 결과, 값 =", env["값"])
