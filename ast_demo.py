@@ -39,6 +39,11 @@ class Assign(Stmt):
 class Program:
 	body: List[Stmt]  # 프로그램은 문장들의 리스트
 
+@dataclass
+class If(Stmt):
+	test: Expr
+	body: List[Stmt]
+
 
 # AST를 예쁘게 출력하는 함수들
 
@@ -65,8 +70,15 @@ def print_stmt(node: Stmt, indent: int = 0):
 		print_expr(node.target, indent + 2)
 		print(f"{space} value:")
 		print_expr(node.value, indent + 2)
+	elif isinstance(node, If):
+		print(f"{space}If")
+		print(f"{space} test:")
+		print_expr(node.test, indent + 2)
+		print(f"{space} body:")
+		for s in node.body:
+			print_stmt(s, indent + 2)
 	else:
-		print(f"{space}<Unknown Stmt {node}>")
+		print(f"{space}<Unknown Stmt {node!r}>")
 
 def print_program(prog: Program):
 	print("Program")

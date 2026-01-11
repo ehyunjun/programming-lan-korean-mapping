@@ -11,7 +11,7 @@ def simple_lexer(text: str):
 	"""
 
 	# 기호들 주변에 공백을 넣어서 분리하기 쉽게 만든다.
-	for ch in ["(", ")", ":", ","]:
+	for ch in ["(", ")", ":", ",", "=", "+", "-", "*", "/", "<", ">"]:
 		text = text.replace(ch, f" {ch} ")
 
 	words = text.split()
@@ -20,7 +20,7 @@ def simple_lexer(text: str):
 	for w in words:
 		if w in KEYWORDS:
 			tokens.append(("KEYWORD", w))
-		elif w in ["(", ")", ":", ",", "=", "+", "-", "*", "/"]:
+		elif w in ["(", ")", ":", ",", "=", "+", "-", "*", "/", "<", ">"]:
 			tokens.append(("SYMBOL", w))
 		elif w.isdigit():
 			tokens.append(("NUMBER", w))
@@ -31,7 +31,7 @@ def simple_lexer(text: str):
 
 if __name__ == "__main__":
 	# 테스트용 한글 코드 한줄
-	code = "값 = 1 + 2"
+	code = "만약 값 < 10: 값 = 값 + 1"
 
 	tokens = simple_lexer(code)
 

@@ -6,7 +6,7 @@
 
 from codegen_demo import gen_program
 from lexer_demo import simple_lexer
-from ast_demo import Program, Assign, Name, Number, BinOp, print_program
+from ast_demo import Program, Assign, Name, Number, BinOp, If, print_program
 
 class Parser:
 	def __init__(self, tokens):
@@ -40,11 +40,8 @@ class Parser:
 	# 파싱 시작점
 
 	def parse_program(self) -> Program:
-		"""
-		지금은 한 줄짜리 대입문만 있다고 가정하고
-		Program(body=[Assign(...)] ) 하나만 만든다.
-		"""
-		stmt = self.parse_assign()
+
+		stmt = self.parse_stmt()
 		return Program(body=[stmt])
 	
 	def parse_assign(self) -> Assign:
@@ -94,9 +91,19 @@ class Parser:
 		else:
 			raise SyntaxError(f"숫자나 이름이 와야 하는 위치에서 {self.current}를 만났습니다.")
 		
+	def parse_stmt(self):
+		ttype, tvalue = self.current
+
+		if ttype == "KEYWORD" and tvalue == "만약":
+			return self.parse_if()
+		elif ttype == "IDENT":
+			return self.parse_assign()
+		else:
+			raise SyntaxError(f"문장이 시작될 수 없는 토큰: {self.current}")
+		
 if __name__ == "__main__":
 	# 1) 한글 코드 한 줄
-	code = "값 = 1 + 2"
+	code = "만약 값 < 10: 값 = 값 + 1"
 
 	# 2) 렉서로 토큰 뽑기
 	tokens = simple_lexer(code)
