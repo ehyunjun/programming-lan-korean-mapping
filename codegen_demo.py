@@ -3,7 +3,7 @@
 # AST(Program / Assign / BinOp / Number / Name)를
 # 실제 파이썬 코드 문자열로 바꿔보는 데모
 
-from ast_demo import Program, Assign, If, Name, Number, BinOp, Expr, Stmt
+from ast_demo import Program, Assign, If, While, Name, Number, BinOp, Expr, Stmt
 
 def gen_expr(node: Expr) -> str:
 	""" 표현식(Expr) -> 파이썬 코드 문자열 """
@@ -41,6 +41,15 @@ def gen_stmt(node: Stmt) -> str:
 				body_code = gen_stmt(stmt)
 				for line in body_code.splitlines():
 					lines.append("    " + line)
+
+	# 3) while 문
+	elif isinstance(node, While):
+		cond_code = gen_expr(node.test)
+		lines = [f"while {cond_code}:"]
+		for stmt in node.body:
+			body_code = gen_stmt(stmt)
+			for line in body_code.splitlines():
+				lines.append("    " + line)
 
 		return "\n".join(lines)
 	else:

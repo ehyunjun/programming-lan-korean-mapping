@@ -4,7 +4,7 @@
 # 그 트리를 예쁘게 출력해 보는 데모.
 
 from dataclasses import dataclass
-from typing import List, Union
+from typing import List
 
 # AST 노드 타입들
 
@@ -27,7 +27,7 @@ class BinOp(Expr):
 	right: Expr
 
 class Stmt:
-	"""" 문장(Statement)의 부모 클래스"""
+	"""" 문장(Statement)의 부모 클래스 """
 	pass
 
 @dataclass
@@ -44,6 +44,11 @@ class If(Stmt):
 	test: Expr
 	body: List[Stmt]
 	orelse: List[Stmt] | None = None
+
+@dataclass
+class While(Stmt):
+	test: Expr
+	body: List[Stmt]
 
 
 # AST를 예쁘게 출력하는 함수들
@@ -82,6 +87,13 @@ def print_stmt(node: Stmt, indent: int = 0):
 			print(f"{space} orelse:")
 			for s in node.orelse:
 				print_stmt(s, indent + 2)
+	elif isinstance(node, While):
+		print(f"{space}While")
+		print(f"{space} test:")
+		print_expr(node.test, indent + 2)
+		print(f"{space} body:")
+		for s in node.body:
+			print_stmt(s, indent + 2)
 	else:
 		print(f"{space}<Unknown Stmt {node!r}>")
 

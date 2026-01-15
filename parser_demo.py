@@ -6,7 +6,7 @@
 
 from codegen_demo import gen_program
 from lexer_demo import simple_lexer
-from ast_demo import Program, Assign, Name, Number, BinOp, If, print_program
+from ast_demo import Expr, Stmt, Program, Assign, Name, Number, BinOp, If, While,  print_program
 BINARY_OPS = {"+", "-", "*", "/", "<", ">"}
 
 class Parser:
@@ -41,9 +41,10 @@ class Parser:
 	# 파싱 시작점
 
 	def parse_program(self) -> Program:
-
-		stmt = self.parse_stmt()
-		return Program(body=[stmt])
+		body = []
+		while self.current[0] != "EOF":
+			body.append(self.parse_stmt())
+		return Program(body=body)
 	
 	def parse_assign(self) -> Assign:
 		"""
@@ -64,7 +65,7 @@ class Parser:
 	
 	# 표현식 파싱
 
-	def parse_expr(self):
+	def parse_expr(self) -> Expr:
 		"""
 		expr ::= term ( '+' term )*
 		term ::= NUMBER | IDENT
@@ -106,14 +107,19 @@ class Parser:
 		
 		# 선택적인 '아니면' 처리 (elif 한 번만)
 		if self.current[0] == "KEYWORD" and self.current[1] == "아니면":
+			
 			# '아니면' 키워드 소비
 			self.expect("KEYWORD", "아니면")
+			
 			# elif 조건식
 			elif_cond = self.parse_expr()
+			
 			# ':' 기호
 			self.expect("SYMBOL", ":")
+			
 			# elif 본문 (대입문 하나)
 			elif_stmt = self.parse_assign()
+			
 			# elif는 "else 안의 if"로 표현
 			inner_if = If(test=elif_cond, body=[elif_stmt], orelse=None)
 			if_node.orelse = [inner_if]
@@ -129,12 +135,32 @@ class Parser:
 		
 		# '아니면' 없이 바로 '그외'만 있는 경우
 		if self.current[0] == "KEYWORD" and self.current[1] == "그외":
-			self.expect("KEYWROD", "그외")
+			self.expect("KEYWORD", "그외")
 			self.expect("SYMBOL", ":")
 			else_stmt = self.parse_assign()
 			if_node.orelse = [else_stmt]
 
 		return if_node
+	
+	def parse_while(self) -> While:
+		"""
+		While문:
+			동안 expr ':' assign
+		예: 동안 값 < 10: 값 = 값 + 1
+		"""
+		# 1) '동안' 키워드 소비
+		self.expect("KEYWORD", "동안")
+		
+		# 2) 조건식
+		cond = self.parse_expr()
+		
+		# 3) ':' 기호
+		self.expect("SYMBOL", ":")
+		
+		# 4) 본문: 지금은 '대입문 하나'라고 가정
+		body_stmt = self.parse_assign()
+
+		return While(test=cond, body=[body_stmt])
 	
 	def parse_term(self):
 		tok_type, tok_value = self.current
@@ -148,11 +174,13 @@ class Parser:
 		else:
 			raise SyntaxError(f"숫자나 이름이 와야 하는 위치에서 {self.current}를 만났습니다.")
 		
-	def parse_stmt(self):
+	def parse_stmt(self) -> Stmt:
 		ttype, tvalue = self.current
 
 		if ttype == "KEYWORD" and tvalue == "만약":
 			return self.parse_if()
+		elif ttype == "KEYWORD" and tvalue == "동안":
+			return self.parse_while()
 		elif ttype == "IDENT":
 			return self.parse_assign()
 		else:
@@ -160,7 +188,7 @@ class Parser:
 		
 if __name__ == "__main__":
 	# 1) 한글 코드 한 줄
-	code = "만약 값 < 10: 값 = 값 + 1 아니면 값 < 20: 값 = 값 + 2 그외: 값 = 0"
+	code = "동안 값 < 10: 값 = 값 + 1"
 
 	# 2) 렉서로 토큰 뽑기
 	tokens = simple_lexer(code)
