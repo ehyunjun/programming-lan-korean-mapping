@@ -7,6 +7,7 @@
 from codegen_demo import gen_program
 from lexer_demo import simple_lexer
 from ast_demo import Program, Assign, Name, Number, BinOp, If, print_program
+BINARY_OPS = {"+", "-", "*", "/", "<", ">"}
 
 class Parser:
 	def __init__(self, tokens):
@@ -72,12 +73,33 @@ class Parser:
 		left = self.parse_term()
 
 		# 뒤에 "+ term" 이 계속 붙을 수 있음: 1 + 2 + 3 ...
-		while self.current[0] == "SYMBOL" and self.current[1] == "+":
-			self.expect("SYMBOL", "+")
+		while self.current[0] == "SYMBOL" and self.current[1] in BINARY_OPS:
+			op = self.current[1]
+			self.advance()
 			right = self.parse_term()
-			left = BinOp(left=left, op="+", right=right)
+			left = BinOp(left=left, op=op, right=right)
 
 		return left
+	
+	def parse_if(self) -> If:
+		"""
+		if문 : '만약' expr ':' assign
+		예) 만약 값 < 10: 값 = 값 + 1
+		"""
+		# 1) '만약' 키워드 소비
+		self.expect("KEYWORD", "만약")
+
+		# 2) 조건식 expr 파싱 (값 < 10 부분)
+		test_expr = self.parse_expr()
+
+		# 3) ':' 기호
+		self.expect("SYMBOL", ":")
+
+		# 4) if 본문은 지금은 '대입문 하나'라고 가정
+		body_stmt = self.parse_assign()
+
+		# 5) If AST 노드 만들기
+		return If(test=test_expr, body=[body_stmt])
 	
 	def parse_term(self):
 		tok_type, tok_value = self.current
@@ -124,6 +146,6 @@ if __name__ == "__main__":
 	print(py_code)
 
 	# 5) 실제로 실행해보기
-	env = {}
+	env = {"값": 3}
 	exec(py_code, env, env)
 	print("실행 결과, 값 =", env["값"])

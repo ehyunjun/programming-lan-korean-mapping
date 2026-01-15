@@ -3,7 +3,7 @@
 # AST(Program / Assign / BinOp / Number / Name)를
 # 실제 파이썬 코드 문자열로 바꿔보는 데모
 
-from ast_demo import Program, Assign, Name, Number, BinOp, Expr, Stmt
+from ast_demo import Program, Assign, If, Name, Number, BinOp, Expr, Stmt
 
 def gen_expr(node: Expr) -> str:
 	""" 표현식(Expr) -> 파이썬 코드 문자열 """
@@ -20,10 +20,21 @@ def gen_expr(node: Expr) -> str:
 	
 def gen_stmt(node: Stmt) -> str:
 	""" 문장(Stmt) -> 한 줄짜리 파이썬 코드 문자열 """
+	# 1) 대입문
 	if isinstance(node, Assign):
 		target = node.target.id
 		value_code = gen_expr(node.value)
 		return f"{target} = {value_code}"
+	
+	# 2) if 문
+	if isinstance(node,If):
+		cond_code = gen_expr(node.test)
+		lines = [f"if {cond_code}:"]
+		for stmt in node.body:
+			body_code = gen_stmt(stmt)
+			for line in body_code.splitlines():
+				lines.append("    " + line)
+		return "\n".join(lines)
 	else:
 		raise TypeError(f"지원하지 않는 Stmt 타입: {node!r}")
 	
@@ -31,8 +42,8 @@ def gen_program(prog: Program) -> str:
 	""" Program 전체를 파이썬 소스코드 문자열로 변환 """
 	lines: list[str] = []
 	for stmt in prog.body:
-		lines.append(gen_stmt(stmt))
-	# 문장들을 줄바꿈으로 이어붙이기
+		code = gen_stmt(stmt)
+		lines.extend(code.splitlines())
 	return "\n".join(lines)
 
 if __name__ == "__main__":
