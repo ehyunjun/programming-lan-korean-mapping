@@ -43,6 +43,7 @@ class Program:
 class If(Stmt):
 	test: Expr
 	body: List[Stmt]
+	orelse: List[Stmt] | None = None
 
 
 # AST를 예쁘게 출력하는 함수들
@@ -77,6 +78,10 @@ def print_stmt(node: Stmt, indent: int = 0):
 		print(f"{space} body:")
 		for s in node.body:
 			print_stmt(s, indent + 2)
+		if node.orelse:
+			print(f"{space} orelse:")
+			for s in node.orelse:
+				print_stmt(s, indent + 2)
 	else:
 		print(f"{space}<Unknown Stmt {node!r}>")
 

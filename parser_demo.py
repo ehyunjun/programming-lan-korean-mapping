@@ -83,23 +83,58 @@ class Parser:
 	
 	def parse_if(self) -> If:
 		"""
-		if문 : '만약' expr ':' assign
-		예) 만약 값 < 10: 값 = 값 + 1
+		if문 : 
+			만약 expr ':' assign
+			[아니면 expr ':' assign]
+			[그외 ':' assign]
+			(elif는 현재 한 번만 허용)
 		"""
 		# 1) '만약' 키워드 소비
 		self.expect("KEYWORD", "만약")
 
-		# 2) 조건식 expr 파싱 (값 < 10 부분)
-		test_expr = self.parse_expr()
+		# 2) 첫 번째 조건식 (값 < 10 부분)
+		cond = self.parse_expr()
 
 		# 3) ':' 기호
 		self.expect("SYMBOL", ":")
 
 		# 4) if 본문은 지금은 '대입문 하나'라고 가정
-		body_stmt = self.parse_assign()
+		then_stmt = self.parse_assign()
 
-		# 5) If AST 노드 만들기
-		return If(test=test_expr, body=[body_stmt])
+		# 기본 if 노드
+		if_node = If(test=cond, body=[then_stmt], orelse=None)
+		
+		# 선택적인 '아니면' 처리 (elif 한 번만)
+		if self.current[0] == "KEYWORD" and self.current[1] == "아니면":
+			# '아니면' 키워드 소비
+			self.expect("KEYWORD", "아니면")
+			# elif 조건식
+			elif_cond = self.parse_expr()
+			# ':' 기호
+			self.expect("SYMBOL", ":")
+			# elif 본문 (대입문 하나)
+			elif_stmt = self.parse_assign()
+			# elif는 "else 안의 if"로 표현
+			inner_if = If(test=elif_cond, body=[elif_stmt], orelse=None)
+			if_node.orelse = [inner_if]
+
+			# elif 다음에 '그외'가 올 수도 있음
+			if self.current[0] == "KEYWORD" and self.current[1] == "그외":
+				self.expect("KEYWORD", "그외")
+				self.expect("SYMBOL", ":")
+				else_stmt = self.parse_assign()
+				inner_if.orelse = [else_stmt]
+
+			return if_node
+		
+		# '아니면' 없이 바로 '그외'만 있는 경우
+		if self.current[0] == "KEYWORD" and self.current[1] == "그외":
+			self.expect("KEYWROD", "그외")
+			self.expect("SYMBOL", ":")
+			else_stmt = self.parse_assign()
+			if_node.orelse = [else_stmt]
+
+		return if_node
 	
 	def parse_term(self):
 		tok_type, tok_value = self.current
@@ -125,7 +160,7 @@ class Parser:
 		
 if __name__ == "__main__":
 	# 1) 한글 코드 한 줄
-	code = "만약 값 < 10: 값 = 값 + 1"
+	code = "만약 값 < 10: 값 = 값 + 1 아니면 값 < 20: 값 = 값 + 2 그외: 값 = 0"
 
 	# 2) 렉서로 토큰 뽑기
 	tokens = simple_lexer(code)

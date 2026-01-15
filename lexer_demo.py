@@ -1,6 +1,6 @@
 # lexer_demo.py
 # 한글 키워드 목록
-KEYWORDS = {"함수", "만약", "아니면", "반환", "동안"}
+KEYWORDS = {"함수", "만약", "아니면", "그외", "반환", "동안"}
 
 def simple_lexer(text: str):
 	"""

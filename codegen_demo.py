@@ -27,13 +27,21 @@ def gen_stmt(node: Stmt) -> str:
 		return f"{target} = {value_code}"
 	
 	# 2) if 문
-	if isinstance(node,If):
+	elif isinstance(node, If):
 		cond_code = gen_expr(node.test)
 		lines = [f"if {cond_code}:"]
 		for stmt in node.body:
 			body_code = gen_stmt(stmt)
 			for line in body_code.splitlines():
 				lines.append("    " + line)
+
+		if node.orelse:
+			lines.append("else:")
+			for stmt in node.orelse:
+				body_code = gen_stmt(stmt)
+				for line in body_code.splitlines():
+					lines.append("    " + line)
+
 		return "\n".join(lines)
 	else:
 		raise TypeError(f"지원하지 않는 Stmt 타입: {node!r}")
