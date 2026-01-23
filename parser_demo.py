@@ -8,7 +8,7 @@ from codegen_demo import gen_program
 from lexer_demo import simple_lexer
 from ast_demo import Expr, Stmt, Program, Assign, Name, Number, BinOp, If, While, For, FunctionDef, Return, Call, print_program
 BINARY_OPS = {"+", "-", "*", "/", "<", ">"}
-DEF_KEYWORD = "정의" # main 브랜치
+DEF_KEYWORD = "함수" # 이 브랜치는 '함수'를 사용
 
 class Parser:
 	def __init__(self, tokens):

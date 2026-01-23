@@ -1,5 +1,5 @@
 # def 에 해당하는 한글 키워드
-DEF_KEYWORD = "정의" # main 브랜치 기준
+DEF_KEYWORD = "함수" # 이 브랜치에서는 '함수'를 사용
 
 # lexer_demo.py
 # 한글 키워드 목록
