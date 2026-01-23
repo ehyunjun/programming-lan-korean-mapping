@@ -5,40 +5,91 @@ DEF_KEYWORD = "정의" # main 브랜치 기준
 # 한글 키워드 목록
 KEYWORDS = {DEF_KEYWORD, "만약", "아니면", "그외", "반환", "동안", "반복"}
 
+SYMBOLS = ["(", ")", ":", ",", "=", "+", "-", "*", "/", "<", ">"]
+
 def simple_lexer(text: str):
-	"""
-	데모 Lexer:
-	- 괄호 / 콜론 / 쉼표를 따로 떼어내고
-	- 공백 기준으로 쪼개서
-	- 키워드 / 기호 / 숫자 / 이름 을 구분만 해본다.
-	"""
+    """
+    데모 Lexer:
+    - 줄 단위로 읽으면서 선행 공백 개수로 들여쓰기 레벨을 판단
+    - 들여쓰기 증가 : INDENT 토큰
+    - 들여쓰기 감소 : DEDENT 토큰
+    - 각 줄 끝에 NEWLINE 토큰
+    - 괄호 / 콜론 / 쉼표 / 연산자 등은 SYMBOL 토큰
+    - 키워드 / 숫자 / 이름 구분
+    """
+    tokens = []
+    indent_stack =[0] # 들여쓰기 레벨 스택
 
-	# 기호들 주변에 공백을 넣어서 분리하기 쉽게 만든다.
-	for ch in ["(", ")", ":", ",", "=", "+", "-", "*", "/", "<", ">"]:
-		text = text.replace(ch, f" {ch} ")
+    lines = text.splitlines()
 
-	words = text.split()
-	tokens = []
+    for raw_line in lines:
+        # 줄 끝 개행 문자 제거
+        line = raw_line.rstrip("\n\r")
 
-	for w in words:
-		if w in KEYWORDS:
-			tokens.append(("KEYWORD", w))
-		elif w in ["(", ")", ":", ",", "=", "+", "-", "*", "/", "<", ">"]:
-			tokens.append(("SYMBOL", w))
-		elif w.isdigit():
-			tokens.append(("NUMBER", w))
-		else:
-			# 나머지는 일단 "이름" 취급
-			tokens.append(("IDENT", w))
-	return tokens
+        # 완전 빈 줄이면 스킵 (브록 구조에 영향 주지 않게)
+        if line.strip() =="":
+            continue
+        # 1) 선행 공백 개수 세기 (스페이스 기준)
+        indent = 0
+        i = 0
+        while i < len(line) and line[i] == " ":
+            indent += 1
+            i += 1
+        
+        # 2) 이전 줄과 들여쓰기 비교해서 INDENT / DEDENT 토큰 생성
+        if indent > indent_stack[-1]:
+            indent_stack.append(indent)
+            tokens.append(("INDENT", ""))
+        elif indent < indent_stack[-1]:
+            # 한 번에 여러 레벨 줄어들 수도 있으니 while
+            while indent < indent_stack[-1]:
+                indent_stack.pop()
+                tokens.append(("DEDENT", ""))
+            if indent != indent_stack[-1]:
+                raise IndentationError("들여쓰기가 일관되지 않습니다.")
+            
+        # 3) 실제 코드 부분(선행 공백 제거된 부분)을 토큰화
+        code = line[i:]
+
+        # 기호 주변에 공백을 넣어서 분리하기 쉽게 만든다.
+        for ch in SYMBOLS:
+            code = code.replace(ch, f" {ch} ")
+        
+        for w in code.split():
+            if w in KEYWORDS:
+                tokens.append(("KEYWORD", w))
+            elif w in SYMBOLS:
+                tokens.append(("SYMBOL", w))
+            elif w.isdigit():
+                tokens.append(("NUMBER", w))
+            else:
+                # 나머지는 일단 '이름' 취급
+                tokens.append(("IDENT", w))
+        
+        # 4) 줄 끝 표시
+        tokens.append(("NEWLINE", ""))
+    
+    # 파일이 끝났는데 아직 들여쓰기가 남아 있다면 모두 DEDENT
+    while len(indent_stack) > 1:
+        indent_stack.pop()
+        tokens.append(("DEDENT", ""))
+    
+    return tokens
+
 
 if __name__ == "__main__":
-	# 테스트용 한글 코드 한줄
-	code = "만약 값 < 10: 값 = 값 + 1"
+    # 테스트용 한글 코드 한줄
+    code = """만약 값 < 10:
+    값 = 값 + 1
+    값 = 값 + 2
+그외:
+    값 = 0
+"""
 
-	tokens = simple_lexer(code)
+    tokens = simple_lexer(code)
 
-	print("입력 코드:", code)
-	print("토큰들:")
-	for t in tokens:
-		print(" ", t)
+    print("입력 코드:", code)
+    print(code)
+    print("토큰들:")
+    for t in tokens:
+        print(" ", t)
