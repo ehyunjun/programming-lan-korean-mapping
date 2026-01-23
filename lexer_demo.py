@@ -1,6 +1,9 @@
+# def 에 해당하는 한글 키워드
+DEF_KEYWORD = "정의" # main 브랜치 기준
+
 # lexer_demo.py
 # 한글 키워드 목록
-KEYWORDS = {"함수", "만약", "아니면", "그외", "반환", "동안", "반복"}
+KEYWORDS = {DEF_KEYWORD, "만약", "아니면", "그외", "반환", "동안", "반복"}
 
 def simple_lexer(text: str):
 	"""

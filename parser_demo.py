@@ -6,8 +6,9 @@
 
 from codegen_demo import gen_program
 from lexer_demo import simple_lexer
-from ast_demo import Expr, Stmt, Program, Assign, Name, Number, BinOp, If, While, For, print_program
+from ast_demo import Expr, Stmt, Program, Assign, Name, Number, BinOp, If, While, For, FunctionDef, Retrun, Call, print_program
 BINARY_OPS = {"+", "-", "*", "/", "<", ">"}
+DEF_KEYWORD = "정의" # main 브랜치
 
 class Parser:
 	def __init__(self, tokens):
@@ -196,6 +197,16 @@ class Parser:
 		body_stmt = self.parse_assign()
 
 		return For(target=target, start=start_expr, end=end_expr, body=[body_stmt])
+	
+	def parse_function(self) -> FunctionDef:
+		# '정의' or '함수' 키워드 (브랜치에 따라 달라짐)
+		self.expect("KEYWORD", DEF_KEYWORD)
+
+		# 함수 이름
+		_, func_name = self.expect("IDENT")
+
+		# '(' ...
+		...
 			
 	def parse_term(self):
 		tok_type, tok_value = self.current
@@ -218,6 +229,10 @@ class Parser:
 			return self.parse_while()
 		elif ttype == "KEYWORD" and tvalue == "반복":
 			return self.parse_for()
+		elif ttype == "KEYWORD" and tvalue == DEF_KEYWORD:
+			return self.parse_function()
+		elif ttype == "KEYWORD" and tvalue == "반환":
+			return self.parse_return()
 		elif ttype == "IDENT":
 			return self.parse_assign()
 		else:
@@ -225,7 +240,7 @@ class Parser:
 		
 if __name__ == "__main__":
 	# 1) 한글 코드 한 줄
-	code = "값 = 0 반복 i = 0, 8: 값 = 값 + i"
+	code = f"{DEF_KEYWORD} 더하기(x, y): 반환 x + y 값 = 더하기(1, 2)"
 
 	# 2) 렉서로 토큰 뽑기
 	tokens = simple_lexer(code)
