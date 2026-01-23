@@ -26,8 +26,13 @@ class BinOp(Expr):
 	op: str  # "+", "-", "*", "/" 같은 연산자 문자열
 	right: Expr
 
+@dataclass
+class Call(Expr):
+	func: Expr
+	args: List[Expr]
+
 class Stmt:
-	"""" 문장(Statement)의 부모 클래스 """
+	""" 문장(Statement)의 부모 클래스 """
 	pass
 
 @dataclass
@@ -57,6 +62,16 @@ class For(Stmt):
 	end: Expr
 	body: List[Stmt]
 
+@dataclass
+class Return(Stmt):
+	value: Expr | None = None
+
+@dataclass
+class FunctionDef(Stmt):
+	name: str
+	args: List[str]
+	body: List[Stmt]
+
 # AST를 예쁘게 출력하는 함수들
 
 def print_expr(node: Expr, indent: int = 0):
@@ -71,6 +86,13 @@ def print_expr(node: Expr, indent: int = 0):
 		print_expr(node.left, indent + 2)
 		print(f"{space} right:")
 		print_expr(node.right, indent + 2)
+	elif isinstance(node, Call):
+		print(f"{space}Call")
+		print(f"{space} func:")
+		print_expr(node.func, indent + 2)
+		print(f"{space} args:")
+		for a in node.args:
+			print_expr(a, indent + 2)
 	else:
 		print(f"{space}<Unknown Expr {node}>")
 
@@ -108,6 +130,16 @@ def print_stmt(node: Stmt, indent: int = 0):
 		print_expr(node.start, indent + 2)
 		print(f"{space} end:")
 		print_expr(node.end, indent + 2)
+		print(f"{space} body:")
+		for s in node.body:
+			print_stmt(s, indent + 2)
+	elif isinstance(node, Return):
+		print(f"{space}Return")
+		if node.value is not None:
+			print(f"{space} value:")
+			print_expr(node.value, indent + 2)
+	elif isinstance(node, FunctionDef):
+		print(f"{space}FunctionDef(name={node.name!r}, args={node.args})")
 		print(f"{space} body:")
 		for s in node.body:
 			print_stmt(s, indent + 2)

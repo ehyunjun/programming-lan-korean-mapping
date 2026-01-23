@@ -6,7 +6,7 @@
 
 from codegen_demo import gen_program
 from lexer_demo import simple_lexer
-from ast_demo import Expr, Stmt, Program, Assign, Name, Number, BinOp, If, While, For, FunctionDef, Retrun, Call, print_program
+from ast_demo import Expr, Stmt, Program, Assign, Name, Number, BinOp, If, While, For, FunctionDef, Return, Call, print_program
 BINARY_OPS = {"+", "-", "*", "/", "<", ">"}
 DEF_KEYWORD = "정의" # main 브랜치
 
@@ -205,18 +205,72 @@ class Parser:
 		# 함수 이름
 		_, func_name = self.expect("IDENT")
 
-		# '(' ...
-		...
+		# '(' 
+		self.expect("SYMBOL", "(")
+
+		# 파라미터 리스트
+		params: list[str] = []
+		if not (self.current[0] == "SYMBOL" and self.current[1] == ")"):
+			while True:
+				_, param_name = self.expect("IDENT")
+				params.append(param_name)
+
+				if self.current[0] == "SYMBOL" and self.current[1] == ",":
+					self.advance()
+					continue
+				break
+		# ')'
+		self.expect("SYMBOL", ")")
+
+		# ':'
+		self.expect("SYMBOL", ":")
+
+		# 지금은 함수 본문을 문장 하나만 허용
+		# 보통은 반환 expr을 쓰는 걸 의도
+		body_stmt = self.parse_stmt()
+		
+		return FunctionDef(name=func_name, args=params, body=[body_stmt])
+	
+	def parse_return(self) -> Return:
+		"""
+		반환문:
+			반환 expr
+		지금은 항상 값이 있는 형태만 지원(반환 alone은 나중에 확장)
+		"""
+		self.expect("KEYWORD", "반환")
+		value_expr = self.parse_expr()
+		return Return(value=value_expr)
 			
-	def parse_term(self):
+	def parse_term(self) -> Expr:
 		tok_type, tok_value = self.current
 
 		if tok_type == "NUMBER":
 			self.advance()
 			return Number(int(tok_value))
+		
 		elif tok_type == "IDENT":
+			# def 호출인지, 그냥 이름인지 확인
+			ident_name = tok_value
 			self.advance()
-			return Name(tok_value)
+
+			# 다음 토큰이 '(' 이면 def 호출
+			if self.current[0] == "SYMBOL" and self.current[1] == "(":
+				self.advance() # '(' 소비
+				args: list[Expr] = []
+				if not (self.current[0] == "SYMBOL" and self.current[1] == ")"):
+					while True:
+						arg_expr = self.parse_expr()
+						args.append(arg_expr)
+
+						if self.current[0] == "SYMBOL" and self.current[1] == ",":
+							self.advance() # ',' 소비
+							continue
+						break
+				# ')'
+				self.expect("SYMBOL", ")")
+				return Call(func=Name(ident_name), args=args)
+			# 그 외: 그냥 변수 이름
+			return Name(ident_name)
 		else:
 			raise SyntaxError(f"숫자나 이름이 와야 하는 위치에서 {self.current}를 만났습니다.")	
 		

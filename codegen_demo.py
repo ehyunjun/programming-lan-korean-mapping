@@ -3,7 +3,7 @@
 # AST(Program / Assign / BinOp / Number / Name)를
 # 실제 파이썬 코드 문자열로 바꿔보는 데모
 
-from ast_demo import Program, Assign, If, While, Name, Number, BinOp, Expr, Stmt, For
+from ast_demo import Program, Assign, If, While, Name, Number, BinOp, Expr, Stmt, For, FunctionDef, Return, Call
 
 def gen_expr(node: Expr) -> str:
 	""" 표현식(Expr) -> 파이썬 코드 문자열 """
@@ -15,6 +15,10 @@ def gen_expr(node: Expr) -> str:
 		left = gen_expr(node.left)
 		right = gen_expr(node.right)
 		return f"({left} {node.op} {right})"
+	elif isinstance(node, Call):
+		func_code = gen_expr(node.func)
+		args_code = ", ".join(gen_expr(a) for a in node.args)
+		return f"{func_code}({args_code})"
 	else:
 		raise TypeError(f"지원하지 않는 Expr 타입: {node!r}")
 	
@@ -41,6 +45,7 @@ def gen_stmt(node: Stmt) -> str:
 				body_code = gen_stmt(stmt)
 				for line in body_code.splitlines():
 					lines.append("    " + line)
+		return "\n".join(lines)
 
 	# 3) while 문
 	elif isinstance(node, While):
@@ -50,6 +55,7 @@ def gen_stmt(node: Stmt) -> str:
 			body_code = gen_stmt(stmt)
 			for line in body_code.splitlines():
 				lines.append("    " + line)
+		return "\n".join(lines)
 
 	# 4) for 문
 	elif isinstance(node, For):
@@ -61,7 +67,27 @@ def gen_stmt(node: Stmt) -> str:
 			body_code = gen_stmt(stmt)
 			for line in body_code.splitlines():
 				lines.append("    " + line)
+		return "\n".join(lines)
 	
+	# 5) return
+	elif isinstance(node, Return):
+		if node.value is None:
+			return "return"
+		else:
+			return f"return {gen_expr(node.value)}"
+	
+	# 6) functionderf
+	elif isinstance(node, FunctionDef):
+		params = ", ".join(node.args)
+		lines = [f"def {node.name}({params}):"]
+		if not node.body:
+			lines.append("    pass")
+		else:
+			for stmt in node.body:
+				body_code = gen_stmt(stmt)
+				for line in body_code.splitlines():
+					lines.append("    " + line)
+
 		return "\n".join(lines)
 	else:
 		raise TypeError(f"지원하지 않는 Stmt 타입: {node!r}")
