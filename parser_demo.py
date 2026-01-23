@@ -8,6 +8,9 @@ from codegen_demo import gen_program
 from lexer_demo import simple_lexer
 from ast_demo import Expr, Stmt, Program, Assign, Name, Number, BinOp, If, While, For, FunctionDef, Return, Call, print_program
 BINARY_OPS = {"+", "-", "*", "/", "<", ">"}
+ADD_OPS = {"+", "-"}
+MUL_OPS = {"*", "/"}
+COMP_OPS = {"<", ">"}
 DEF_KEYWORD = "정의" # main 브랜치
 
 class Parser:
@@ -68,21 +71,102 @@ class Parser:
 
 	def parse_expr(self) -> Expr:
 		"""
-		expr ::= term ( '+' term )*
-		term ::= NUMBER | IDENT
-		지금은 + 만 지원 (우선순위 같은 건 신경 안 쓰는 간단 버전)
+		이제 expr는 '비교식'의 진입점 역할만 한다.
+		"""
+		return self.parse_comparison()
+	
+	def parse_comparison(self) -> Expr:
+		"""
+		comparison ::= sum (('<' | '>') sum)*
+		비교 연산(<, >)은 덧셈/곱셈보다 우선순위가 낮다.
+		"""
+		left = self.parse_sum()
+
+		while self.current[0] == "SYMBOL" and self.current[1] in COMP_OPS:
+			op = self.current[1]
+			self.advance()
+			right = self.parse_sum()
+			left = BinOp(left=left, op=op, right=right)
+		
+		return left
+	
+	def parse_sum(self) -> Expr:
+		"""
+		sum ::= term (('+' | '-') term)*
 		"""
 		left = self.parse_term()
 
-		# 뒤에 "+ term" 이 계속 붙을 수 있음: 1 + 2 + 3 ...
-		while self.current[0] == "SYMBOL" and self.current[1] in BINARY_OPS:
+		while self.current[0] == "SYMBOL" and self.current[1] in ADD_OPS:
 			op = self.current[1]
 			self.advance()
 			right = self.parse_term()
 			left = BinOp(left=left, op=op, right=right)
-
+		
 		return left
 	
+	def parse_term(self) -> Expr:
+		"""
+		term ::= factor (('*' | '/') factor)*
+		"""
+		left = self.parse_factor()
+
+		while self.current[0] == "SYMBOL" and self.current[1] in MUL_OPS:
+			op = self.current[1]
+			self.advance()
+			right = self.parse_factor()
+			left = BinOp(left=left, op=op, right=right)
+		
+		return left
+	
+	def parse_factor(self) -> Expr:
+		"""
+		factor ::= NUMBER
+				| IDENT / 함수 호출
+				| '(' expr ')'
+		"""
+		tok_type, tok_value = self.current
+
+		# 숫자
+		if tok_type == "NUMBER":
+			self.advance()
+			return Number(int(tok_value))
+		
+		# 괄호식: (expr)
+		if tok_type == "SYMBOL" and tok_value == "(":
+			self.advance() # '(' 소비
+			inner = self.parse_expr()
+			self.expect("SYMBOL", ")")
+			return inner
+		
+		# 이름(변수 또는 함수호출)
+		if tok_type == "IDENT":
+			ident_name = tok_value
+			self.advance()
+
+			# 함수 호출인지 확인: 이름 뒤에 '(' 이 오면 호출
+			if self.current[0] == "SYMBOL" and self.current[1] == "(":
+				self.advance() # '(' 소비
+				args: list[Expr] = []
+				if not (self.current[0] == "SYMBOL" and self.current[1] == ")"):
+					while True:
+						arg_expr = self.parse_expr()
+						args.append(arg_expr)
+
+						if self.current[0] == "SYMBOL" and self.current[1] == ",":
+							self.advance() # ',' 소비
+							continue
+						break
+			
+				# ')'
+				self.expect("SYMBOL", ")")
+				return Call(func=Name(ident_name), args=args)
+			
+			# 그냥 변수 이름
+			return Name(ident_name)
+		
+		# 그 외는 에러
+		raise SyntaxError(f" 숫자, 이름, 혹은 괄호로 시작하는 표현식이 와야 하는데 {self.current}를 만났습니다.")
+
 	def parse_if(self) -> If:
 		"""
 		if문 : 
@@ -240,40 +324,7 @@ class Parser:
 		self.expect("KEYWORD", "반환")
 		value_expr = self.parse_expr()
 		return Return(value=value_expr)
-			
-	def parse_term(self) -> Expr:
-		tok_type, tok_value = self.current
 
-		if tok_type == "NUMBER":
-			self.advance()
-			return Number(int(tok_value))
-		
-		elif tok_type == "IDENT":
-			# def 호출인지, 그냥 이름인지 확인
-			ident_name = tok_value
-			self.advance()
-
-			# 다음 토큰이 '(' 이면 def 호출
-			if self.current[0] == "SYMBOL" and self.current[1] == "(":
-				self.advance() # '(' 소비
-				args: list[Expr] = []
-				if not (self.current[0] == "SYMBOL" and self.current[1] == ")"):
-					while True:
-						arg_expr = self.parse_expr()
-						args.append(arg_expr)
-
-						if self.current[0] == "SYMBOL" and self.current[1] == ",":
-							self.advance() # ',' 소비
-							continue
-						break
-				# ')'
-				self.expect("SYMBOL", ")")
-				return Call(func=Name(ident_name), args=args)
-			# 그 외: 그냥 변수 이름
-			return Name(ident_name)
-		else:
-			raise SyntaxError(f"숫자나 이름이 와야 하는 위치에서 {self.current}를 만났습니다.")	
-		
 	def parse_stmt(self) -> Stmt:
 		ttype, tvalue = self.current
 
@@ -294,7 +345,7 @@ class Parser:
 		
 if __name__ == "__main__":
 	# 1) 한글 코드 한 줄
-	code = f"{DEF_KEYWORD} 더하기(x, y): 반환 x + y 값 = 더하기(1, 2)"
+	code = "값 = 1 + 2 * 3"
 
 	# 2) 렉서로 토큰 뽑기
 	tokens = simple_lexer(code)
