@@ -6,7 +6,7 @@
 
 from codegen_demo import gen_program
 from lexer_demo import simple_lexer
-from ast_demo import Expr, Stmt, Program, Assign, Name, Number, BinOp, If, While,  print_program
+from ast_demo import Expr, Stmt, Program, Assign, Name, Number, BinOp, If, While, For, print_program
 BINARY_OPS = {"+", "-", "*", "/", "<", ">"}
 
 class Parser:
@@ -162,6 +162,41 @@ class Parser:
 
 		return While(test=cond, body=[body_stmt])
 	
+	def parse_for(self) -> For:
+		"""
+		For문:
+			반복 i = 0, 10: assign
+		를
+			for i in range(0, 10):
+		로 변환하는 AST 생성
+		"""
+		# 1) '반복' 키워드 소비
+		self.expect("KEYWORD", "반복")
+
+		# 2) 반복 변수 이름
+		_, ident_value = self.expect("IDENT")
+		target = Name(ident_value)
+
+		# 3) '=' 기호
+		self.expect("SYMBOL", "=")
+
+		# 4) 시작값
+		start_expr = self.parse_expr()
+
+		# 5) ',' 기호
+		self.expect("SYMBOL", ",")
+
+		# 6) 끝값
+		end_expr = self.parse_expr()
+
+		# 7) ':' 기호
+		self.expect("SYMBOL", ":")
+
+		# 8) 본문: 지금은 대입문 하나라고 가정
+		body_stmt = self.parse_assign()
+
+		return For(target=target, start=start_expr, end=end_expr, body=[body_stmt])
+			
 	def parse_term(self):
 		tok_type, tok_value = self.current
 
@@ -172,7 +207,7 @@ class Parser:
 			self.advance()
 			return Name(tok_value)
 		else:
-			raise SyntaxError(f"숫자나 이름이 와야 하는 위치에서 {self.current}를 만났습니다.")
+			raise SyntaxError(f"숫자나 이름이 와야 하는 위치에서 {self.current}를 만났습니다.")	
 		
 	def parse_stmt(self) -> Stmt:
 		ttype, tvalue = self.current
@@ -181,6 +216,8 @@ class Parser:
 			return self.parse_if()
 		elif ttype == "KEYWORD" and tvalue == "동안":
 			return self.parse_while()
+		elif ttype == "KEYWORD" and tvalue == "반복":
+			return self.parse_for()
 		elif ttype == "IDENT":
 			return self.parse_assign()
 		else:
@@ -188,7 +225,7 @@ class Parser:
 		
 if __name__ == "__main__":
 	# 1) 한글 코드 한 줄
-	code = "동안 값 < 10: 값 = 값 + 1"
+	code = "값 = 0 반복 i = 0, 8: 값 = 값 + i"
 
 	# 2) 렉서로 토큰 뽑기
 	tokens = simple_lexer(code)

@@ -50,6 +50,12 @@ class While(Stmt):
 	test: Expr
 	body: List[Stmt]
 
+@dataclass
+class For(Stmt):
+	target: Name
+	start: Expr
+	end: Expr
+	body: List[Stmt]
 
 # AST를 예쁘게 출력하는 함수들
 
@@ -91,6 +97,17 @@ def print_stmt(node: Stmt, indent: int = 0):
 		print(f"{space}While")
 		print(f"{space} test:")
 		print_expr(node.test, indent + 2)
+		print(f"{space} body:")
+		for s in node.body:
+			print_stmt(s, indent + 2)
+	elif isinstance(node, For):
+		print(f"{space}For")
+		print(f"{space} target:")
+		print_expr(node.target, indent + 2)
+		print(f"{space} start:")
+		print_expr(node.start, indent + 2)
+		print(f"{space} end:")
+		print_expr(node.end, indent + 2)
 		print(f"{space} body:")
 		for s in node.body:
 			print_stmt(s, indent + 2)
