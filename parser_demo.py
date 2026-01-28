@@ -12,7 +12,8 @@ from ast_demo import (
     Program, Assign, Name, Number, BinOp, 
     If, While, For, FunctionDef, Return, Call, ExprStmt,
     Bool, NoneLiteral, UnaryOp,
-    print_program
+    print_program,
+    String,
 )
 
 # 연산자 집합
@@ -195,6 +196,10 @@ class Parser:
         if tok_type == "NUMBER":
             self.advance()
             return Number(int(tok_value))
+        
+        if tok_type == "STRING":
+            self.advance()
+            return String(tok_value)
         
         # 불리언 / None 리터럴
         if tok_type == "KEYWORD" and tok_value in ("참", "거짓", "없음"):

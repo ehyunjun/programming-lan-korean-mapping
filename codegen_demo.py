@@ -6,7 +6,7 @@
 from ast_demo import (
     Program, Assign, If, While, Name, Number, BinOp,
     Expr, Stmt, For, FunctionDef, Return, Call, ExprStmt,
-    Bool, NoneLiteral, UnaryOp,
+    Bool, NoneLiteral, UnaryOp, String,
 )
 def gen_expr(node: Expr) -> str:
     """ 표현식(Expr) -> 파이썬 코드 문자열 """
@@ -24,6 +24,8 @@ def gen_expr(node: Expr) -> str:
         func_code = gen_expr(node.func)
         args_code = ", ".join(gen_expr(a) for a in node.args)
         return f"{func_code}({args_code})"
+    elif isinstance(node, String):
+        return repr(node.value)
     elif isinstance(node, Bool):
         return "True" if node.value else "False"
     elif isinstance(node, NoneLiteral):

@@ -13,6 +13,10 @@ class Expr:
     pass
 
 @dataclass
+class String(Expr):
+    value: str
+
+@dataclass
 class Number(Expr):
     value: int
 
@@ -111,6 +115,8 @@ def print_expr(node: Expr, indent: int = 0):
         print(f"{space} args:")
         for a in node.args:
             print_expr(a, indent + 2)
+    elif isinstance(node, String):
+        print(f"{space}String(value={node.value!r})")
     elif isinstance(node, Bool):
         print(f"{space}Bool(value={node.value})")
     elif isinstance(node, NoneLiteral):

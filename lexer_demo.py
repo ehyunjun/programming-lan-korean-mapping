@@ -57,6 +57,56 @@ def simple_lexer(text: str):
         # 3) 실제 코드 부분(선행 공백 제거된 부분)을 토큰화
         code = line[i:]
 
+        j = 0
+        while j < len(code):
+            ch = code[j]
+
+            # 공백/탭 스킵
+            if ch in(" ", "\t"):
+                j += 1
+                continue
+
+            # 문자열 리터럴: "..."
+            if ch in('"', "'"):
+                quote = ch
+                j += 1
+                buf = ""
+                while j <len(code) and code[j] != quote:
+                    buf += code[j]
+                    j += 1
+                # 닫는 따옴표 건너뛰기 (있다면)
+                if j < len(code) and code[j] == quote:
+                    j += 1
+                tokens.append(("STRING", buf))
+                continue
+
+            # 심볼 (연산자, 괄호 등)
+            if ch in SYMBOLS:
+                tokens.append(("SYMBOL", ch))
+                j += 1
+                continue
+
+            # 그외: 키워드 / 숫자 / 이름
+            start = j
+            while (
+                j < len(code)
+                and code[j] not in (" ", "\t")
+                and code[j] not in SYMBOLS
+                and code[j] not in ('"', "'")
+            ):
+                j += 1
+            w = code[start:j]
+
+            if w in KEYWORDS:
+                tokens.append(("KEYWORD", w))
+            elif w.isdigit():
+                tokens.append(("NUMBER", w))
+            else:
+                tokens.append(("IDENT", w))
+
+        # 4) 줄 끝 표시
+        tokens.append(("NEWLINE", ""))
+
         # 기호 주변에 공백을 넣어서 분리하기 쉽게 만든다.
         for ch in SYMBOLS:
             code = code.replace(ch, f" {ch} ")
