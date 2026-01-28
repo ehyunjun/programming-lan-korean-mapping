@@ -5,7 +5,8 @@
 
 from ast_demo import (
     Program, Assign, If, While, Name, Number, BinOp,
-    Expr, Stmt, For, FunctionDef, Return, Call, ExprStmt
+    Expr, Stmt, For, FunctionDef, Return, Call, ExprStmt,
+    Bool, NoneLiteral, UnaryOp,
 )
 def gen_expr(node: Expr) -> str:
     """ 표현식(Expr) -> 파이썬 코드 문자열 """
@@ -23,6 +24,15 @@ def gen_expr(node: Expr) -> str:
         func_code = gen_expr(node.func)
         args_code = ", ".join(gen_expr(a) for a in node.args)
         return f"{func_code}({args_code})"
+    elif isinstance(node, Bool):
+        return "True" if node.value else "False"
+    elif isinstance(node, NoneLiteral):
+        return "None"
+    elif isinstance(node, UnaryOp):
+        if node.op == "not":
+            return f"(not {gen_expr(node.operand)})"
+        else:
+            return f"({node.op}{gen_expr(node.operand)})"
     else:
         raise TypeError(f"지원하지 않는 Expr 타입: {node!r}")
     

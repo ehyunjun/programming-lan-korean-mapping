@@ -11,6 +11,7 @@ from ast_demo import (
     Expr, Stmt, 
     Program, Assign, Name, Number, BinOp, 
     If, While, For, FunctionDef, Return, Call, ExprStmt,
+    Bool, NoneLiteral, UnaryOp,
     print_program
 )
 
@@ -69,9 +70,43 @@ class Parser:
     
     def parse_expr(self) -> Expr:
         """
-        이제 expr는 '비교식'의 진입점 역할만 한다.
+        expr ::= or_expr
         """
-        return self.parse_comparison()
+        return self.parse_or()
+    
+    def parse_or(self) -> Expr:
+        """
+        or_expr ::= and_expr ("또는" and_expr)*
+        """
+        left = self.parse_and()
+        while self.current[0] == "KEYWORD" and self.current[1] == "또는":
+            self.expect("KEYWORD", "또는")
+            right = self.parse_and()
+            left = BinOp(left=left, op="or", right=right)
+        return left
+    
+    def parse_and(self) -> Expr:
+        """
+        and_expr ::= not_expr ("그리고" not_expr)*
+        """
+        left = self.parse_not()
+        while self.current[0] == "KEYWORD" and self.current[1] == "그리고":
+            self.expect("KEYWORD", "그리고")
+            right = self.parse_not()
+            left = BinOp(left=left, op="and", right=right)
+        return left
+    
+    def parse_not(self) -> Expr:
+        """
+        not_expr ::= "아니다" not_expr | comparison
+        """
+        if self.current[0] == "KEYWORD" and self.current[1] == "아니다":
+            self.expect("KEYWORD", "아니다")
+            operand = self.parse_not()
+            return UnaryOp(op="not", operand=operand)
+        else:
+            return self.parse_comparison()
+
     
     def parse_comparison(self) -> Expr:
         """
@@ -80,14 +115,45 @@ class Parser:
         """
         left = self.parse_sum()
 
-        while self.current[0] == "SYMBOL" and self.current[1] in COMP_OPS:
-            op = self.current[1]
-            self.advance()
+        while True:
+            ttype, tvalue = self.current
+            if ttype != "SYMBOL":
+                break
+            
+            op = None
+
+            next_tok = self.tokens[self.pos + 1] if self.pos + 1 < len(self.tokens) else ("EOF", "")
+
+            if tvalue in ("<", ">"):
+                if next_tok[0] == "SYMBOL" and next_tok[1] == "=":
+                    op = tvalue + "="
+                    self.advance()
+                    self.advance()
+                else:
+                    op = tvalue
+                    self.advance()
+            elif tvalue == "=":
+                if next_tok[0] == "SYMBOL" and next_tok[1] == "=":
+                    op = "=="
+                    self.advance()
+                    self.advance()
+                else:
+                    break
+            elif tvalue == "!":
+                if next_tok[0] == "SYMBOL" and next_tok[1] == "=":
+                    op = "!="
+                    self.advance()
+                    self.advance()
+                else:
+                    break
+            else:
+                break
+
             right = self.parse_sum()
-            left = BinOp(left=left, op=op, right=right)
-        
+            left = BinOp(left=left, op=op, right=right) 
+
         return left
-    
+       
     def parse_sum(self) -> Expr:
         """
         sum ::= term (('+' | '-') term)*
@@ -119,6 +185,7 @@ class Parser:
     def parse_factor(self) -> Expr:
         """
         factor ::= NUMBER
+                | 불리언/없음
                 | IDENT / 함수 호출
                 | '(' expr ')'
         """
@@ -128,6 +195,16 @@ class Parser:
         if tok_type == "NUMBER":
             self.advance()
             return Number(int(tok_value))
+        
+        # 불리언 / None 리터럴
+        if tok_type == "KEYWORD" and tok_value in ("참", "거짓", "없음"):
+            self.advance()
+            if tok_value == "참":
+                return Bool(True)
+            elif tok_value == "거짓":
+                return Bool(False)
+            else:
+                return NoneLiteral()
         
         # 괄호식: (expr)
         if tok_type == "SYMBOL" and tok_value == "(":

@@ -23,13 +23,27 @@ class Name(Expr):
 @dataclass
 class BinOp(Expr):
     left: Expr
-    op: str  # "+", "-", "*", "/" 같은 연산자 문자열
+    op: str
     right: Expr
 
 @dataclass
 class Call(Expr):
     func: Expr
     args: List[Expr]
+
+@dataclass
+class Bool(Expr):
+    value: bool
+
+@dataclass
+class NoneLiteral(Expr):
+    """None (없음) 리터럴"""
+    pass
+
+@dataclass
+class UnaryOp(Expr):
+    op: str
+    operand: Expr
 
 class Stmt:
     """ 문장(Statement)의 부모 클래스 """
@@ -97,6 +111,14 @@ def print_expr(node: Expr, indent: int = 0):
         print(f"{space} args:")
         for a in node.args:
             print_expr(a, indent + 2)
+    elif isinstance(node, Bool):
+        print(f"{space}Bool(value={node.value})")
+    elif isinstance(node, NoneLiteral):
+        print(f"{space}NoneLiteral()")
+    elif isinstance(node, UnaryOp):
+        print(f"{space}UnaryOp(op={node.op!r})")
+        print(f"{space} operand:")
+        print_expr(node.operand, indent + 2)
     else:
         print(f"{space}<Unknown Expr {node}>")
 
