@@ -10,7 +10,7 @@ from lexer_demo import simple_lexer, DEF_KEYWORD
 from ast_demo import (
     Expr, Stmt, 
     Program, Assign, Name, Number, BinOp, 
-    If, While, For, FunctionDef, Return, Call, 
+    If, While, For, FunctionDef, Return, Call, ExprStmt,
     print_program
 )
 
@@ -400,7 +400,14 @@ class Parser:
         elif ttype == "KEYWORD" and tvalue == "반환":
             return self.parse_return()
         elif ttype == "IDENT":
-            return self.parse_assign()
+            next_type, next_value = ("EOF", "")
+            if self.pos + 1 < len(self.tokens):
+                next_type, next_value = self.tokens[self.pos + 1]
+            if next_type == "SYMBOL" and next_value == "=":
+                return self.parse_assign()
+            else:
+                expr = self.parse_expr()
+                return ExprStmt(value=expr)
         else:
             raise SyntaxError(f"문장이 시작될 수 없는 토큰: {self.current}")
         

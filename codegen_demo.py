@@ -3,13 +3,17 @@
 # AST(Program / Assign / BinOp / Number / Name)를
 # 실제 파이썬 코드 문자열로 바꿔보는 데모
 
-from ast_demo import Program, Assign, If, While, Name, Number, BinOp, Expr, Stmt, For, FunctionDef, Return, Call
-
+from ast_demo import (
+    Program, Assign, If, While, Name, Number, BinOp,
+    Expr, Stmt, For, FunctionDef, Return, Call, ExprStmt
+)
 def gen_expr(node: Expr) -> str:
     """ 표현식(Expr) -> 파이썬 코드 문자열 """
     if isinstance(node, Number):
         return str(node.value)
     elif isinstance(node, Name):
+        if node.id == "출력":
+            return "print"
         return node.id
     elif isinstance(node, BinOp):
         left = gen_expr(node.left)
@@ -24,6 +28,10 @@ def gen_expr(node: Expr) -> str:
     
 def gen_stmt(node: Stmt) -> str:
     """ 문장(Stmt) -> 한 줄짜리 파이썬 코드 문자열 """
+    # 0) 표현식 문 (예: 출력(값))
+    if isinstance(node, ExprStmt):
+        return gen_expr(node.value)
+    
     # 1) 대입문
     if isinstance(node, Assign):
         target = node.target.id
@@ -111,7 +119,13 @@ if __name__ == "__main__":
                     op="+",
                     right=Number(2),
                 ),
-            )
+            ),
+            ExprStmt(
+                value=Call(
+                    func=Name("출력"),
+                    args=[Name("값")],
+                )
+            ),
         ]
     )
     
@@ -122,4 +136,4 @@ if __name__ == "__main__":
     # 실제로 실행해보기
     env = {}
     exec(py_code, env, env)
-    print("실행 결과, 값 =", env["값"])
+    print("실행 결과:")

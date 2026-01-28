@@ -41,6 +41,10 @@ class Assign(Stmt):
     value: Expr   # 오른쪽: 값(표현식)
 
 @dataclass
+class ExprStmt(Stmt):
+    value: Expr   # 오른쪽: 값(표현식)
+
+@dataclass
 class Program:
     body: List[Stmt]  # 프로그램은 문장들의 리스트
 
