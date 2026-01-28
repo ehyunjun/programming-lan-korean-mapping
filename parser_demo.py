@@ -270,24 +270,15 @@ class Parser:
             current_if.orelse = [new_if]
             current_if = new_if # 체인의 끝을 업데이트
 
-            # elif 다음에 '그외'가 올 수도 있음
-            if self.current[0] == "KEYWORD" and self.current[1] == "그외":
-                self.expect("KEYWORD", "그외")
-                self.expect("SYMBOL", ":")
-                else_body = self.parse_suite()
-                current_if.orelse = else_body
-
-            return root_if
-        
-        # '아니면' 없이 바로 '그외'만 있는 경우
+        # elif 다음에 '그외'가 올 수도 있음
         if self.current[0] == "KEYWORD" and self.current[1] == "그외":
             self.expect("KEYWORD", "그외")
             self.expect("SYMBOL", ":")
             else_body = self.parse_suite()
-            if_node.orelse = else_body
+            current_if.orelse = else_body
 
-        return if_node
-    
+        return root_if
+
     def parse_while(self) -> While:
         """
         While문:
