@@ -15,6 +15,8 @@ def gen_expr(node: Expr) -> str:
     elif isinstance(node, Name):
         if node.id == "출력":
             return "print"
+        if node.id == "범위":
+            return "range"
         return node.id
     elif isinstance(node, BinOp):
         left = gen_expr(node.left)
@@ -52,19 +54,28 @@ def gen_stmt(node: Stmt) -> str:
     
     # 2) if 문
     elif isinstance(node, If):
-        cond_code = gen_expr(node.test)
-        lines = [f"if {cond_code}:"]
-        for stmt in node.body:
-            body_code = gen_stmt(stmt)
-            for line in body_code.splitlines():
-                lines.append("    " + line)
+        lines = []
 
-        if node.orelse:
-            lines.append("else:")
-            for stmt in node.orelse:
+        def emit_if_chain(n: If, first: bool):
+            cond_code = gen_expr(n.test)
+            head = "if" if first else "elif"
+            lines.append(f"{head} {cond_code}:")
+            for stmt in n.body:
                 body_code = gen_stmt(stmt)
                 for line in body_code.splitlines():
                     lines.append("    " + line)
+
+            if n.orelse and len(n.orelse) == 1 and isinstance(n.orelse[0], If):
+                emit_if_chain(n.orelse[0], first=False)
+            # 그 외의 orelse(일반 else 블록)
+            elif n.orelse:
+                lines.append("else:")
+                for stmt in n.orelse:
+                    body_code = gen_stmt(stmt)
+                    for line in body_code.splitlines():
+                        lines.append("    " + line)
+        
+        emit_if_chain(node, first=True)
         return "\n".join(lines)
 
     # 3) while 문
@@ -80,9 +91,8 @@ def gen_stmt(node: Stmt) -> str:
     # 4) for 문
     elif isinstance(node, For):
         target = node.target.id
-        start_code = gen_expr(node.start)
-        end_code = gen_expr(node.end)
-        lines = [f"for {target} in range({start_code}, {end_code}):"]
+        iter_code = gen_expr(node.iter)
+        lines = [f"for {target} in {iter_code}:"]
         for stmt in node.body:
             body_code = gen_stmt(stmt)
             for line in body_code.splitlines():

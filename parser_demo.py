@@ -386,38 +386,32 @@ class Parser:
     def parse_for(self) -> For:
         """
         For문:
-            반복 i = 0, 10: suite
-        를
-            for i in range(0, 10):
-        로 변환하는 AST 생성
+            반복 i 안에 expr: suite
+        예:
+            반복 i 안에 범위(0, 10, 2):
+                출력(i)
         """
-        # 1) '반복' 키워드 소비
+        # '반복' 키워드 소비
         self.expect("KEYWORD", "반복")
 
-        # 2) 반복 변수 이름
+        # 반복 변수 이름
         _, ident_value = self.expect("IDENT")
         target = Name(ident_value)
 
-        # 3) '=' 기호
-        self.expect("SYMBOL", "=")
+        # in -> 안에
+        self.expect("KEYWORD", "안에")
 
-        # 4) 시작값
-        start_expr = self.parse_expr()
+        # iterable 표현식 (범위(...) / 변수 / 함수호출 등)
+        iter_expr = self.parse_expr()
 
-        # 5) ',' 기호
-        self.expect("SYMBOL", ",")
-
-        # 6) 끝값
-        end_expr = self.parse_expr()
-
-        # 7) ':' 기호
+        # :
         self.expect("SYMBOL", ":")
 
-        # 8) 본문: 지금은 대입문 하나라고 가정
+        # 본문
         body = self.parse_suite()
+        
+        return For(target=target, iter=iter_expr, body=body)
 
-        return For(target=target, start=start_expr, end=end_expr, body=body)
-    
     def parse_function(self) -> FunctionDef:
         """
         함수 정의:

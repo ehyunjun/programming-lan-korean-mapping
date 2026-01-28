@@ -80,8 +80,7 @@ class While(Stmt):
 @dataclass
 class For(Stmt):
     target: Name
-    start: Expr
-    end: Expr
+    iter: Expr
     body: List[Stmt]
 
 @dataclass
@@ -158,10 +157,8 @@ def print_stmt(node: Stmt, indent: int = 0):
         print(f"{space}For")
         print(f"{space} target:")
         print_expr(node.target, indent + 2)
-        print(f"{space} start:")
-        print_expr(node.start, indent + 2)
-        print(f"{space} end:")
-        print_expr(node.end, indent + 2)
+        print(f"{space} iter:")
+        print_expr(node.iter, indent + 2)
         print(f"{space} body:")
         for s in node.body:
             print_stmt(s, indent + 2)
