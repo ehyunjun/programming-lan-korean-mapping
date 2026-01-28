@@ -29,11 +29,14 @@ def simple_lexer(text: str):
         # 완전 빈 줄이면 스킵 (브록 구조에 영향 주지 않게)
         if line.strip() =="":
             continue
-        # 1) 선행 공백 개수 세기 (스페이스 기준)
+        # 1) 선행 공백 개수 세기 (스페이스/탭 지원)
         indent = 0
         i = 0
-        while i < len(line) and line[i] == " ":
-            indent += 1
+        while i < len(line) and line[i] in (" ", "\t"):
+            if line[i] == "":
+                indent += 1
+            else:  # '\t'
+                indent +=4
             i += 1
         
         # 2) 이전 줄과 들여쓰기 비교해서 INDENT / DEDENT 토큰 생성
