@@ -229,7 +229,10 @@ class Parser:
             만약 expr ':' suite
             [아니면 expr ':' suite]
             [그외 ':' suite]
-            (elif는 현재 한 번만 허용)
+        
+        파이썬 if/elif/else 처럼
+        - '아니면' 여러 번 가능
+        - 마지막에 '그외' 한 번 가능
         """
         # 1) '만약' 키워드 소비
         self.expect("KEYWORD", "만약")
@@ -240,14 +243,15 @@ class Parser:
         # 3) ':' 기호
         self.expect("SYMBOL", ":")
 
-        # 4) 본문 suite (한 줄 or 블록)
+        # 4) then 블록
         then_body = self.parse_suite()
 
-        # 기본 if 노드
-        if_node = If(test=cond, body=then_body, orelse=None)
+        # 루트 if 노드
+        root_if = If(test=cond, body=then_body, orelse=None)
+        current_if = root_if
         
-        # 선택적인 '아니면' 처리 (elif 한 번만)
-        if self.current[0] == "KEYWORD" and self.current[1] == "아니면":
+        # 5) '아니면' (elif) 여러 번 처리
+        while self.current[0] == "KEYWORD" and self.current[1] == "아니면":
             
             # '아니면' 키워드 소비
             self.expect("KEYWORD", "아니면")
@@ -258,21 +262,22 @@ class Parser:
             # ':' 기호
             self.expect("SYMBOL", ":")
             
-            # elif 본문 (대입문 하나)
+            # elif 본문
             elif_body = self.parse_suite()
             
-            # elif는 "else 안의 if"로 표현
-            inner_if = If(test=elif_cond, body=elif_body, orelse=None)
-            if_node.orelse = [inner_if]
+            # 새 if 노드를 만들어서 현재 if의 orelse에 달아줌
+            new_if = If(test=elif_cond, body=elif_body, orelse=None)
+            current_if.orelse = [new_if]
+            current_if = new_if # 체인의 끝을 업데이트
 
             # elif 다음에 '그외'가 올 수도 있음
             if self.current[0] == "KEYWORD" and self.current[1] == "그외":
                 self.expect("KEYWORD", "그외")
                 self.expect("SYMBOL", ":")
                 else_body = self.parse_suite()
-                inner_if.orelse = else_body
+                current_if.orelse = else_body
 
-            return if_node
+            return root_if
         
         # '아니면' 없이 바로 '그외'만 있는 경우
         if self.current[0] == "KEYWORD" and self.current[1] == "그외":
