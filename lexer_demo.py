@@ -1,14 +1,13 @@
 # lexer_demo.py
 
 from mapping import KW_DEF, HAN_KEYWORDS
+from tokens import SYMBOLS
 
 # 키워드 판정은 중앙 맵핑 기반으로
 KEYWORDS = HAN_KEYWORDS
 
 # def 에 해당하는 한글 키워드
 DEF_KEYWORD = KW_DEF
-
-SYMBOLS = ["(", ")", "[", "]", ":", ",", "=", "+", "-", "*", "/", "<", ">", "!"]
 
 def simple_lexer(text: str):
     """

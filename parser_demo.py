@@ -7,6 +7,7 @@
 
 from codegen_demo import gen_program
 from lexer_demo import simple_lexer, DEF_KEYWORD
+from tokens import ADD_OPS, MUL_OPS
 from ast_demo import (
     Expr, Stmt, 
     Program, Assign, Name, Number, BinOp, 
@@ -16,12 +17,6 @@ from ast_demo import (
     print_program,
     String, ListLiteral, Index,
 )
-
-# 연산자 집합
-BINARY_OPS = {"+", "-", "*", "/", "<", ">"}
-ADD_OPS = {"+", "-"}
-MUL_OPS = {"*", "/"}
-COMP_OPS = {"<", ">"}
 
 class Parser:
     def __init__(self, tokens):
