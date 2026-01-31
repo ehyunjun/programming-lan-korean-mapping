@@ -289,9 +289,9 @@ class Parser:
         _, ident_value = self.expect("IDENT")
         target = Name(ident_value)
 
-        op_type, op_value = self.expect("SYMBOL")
+        _, op_value = self.expect("SYMBOL")
         if op_value not in ("+", "-", "*", "/"):
-            raise SyntaxError(f"복합대입 연산자는 +, -, *, / 중 하나여야 합니다: {(op_type, op_value)}")
+            raise SyntaxError(f"복합대입 연산자는 +, -, *, / 중 하나여야 합니다: {op_value!r}")
         
         self.expect("SYMBOL", "=")
         value_expr = self.parse_expr()
@@ -507,6 +507,11 @@ class Parser:
         self.expect("KEYWORD", "반환")
         value_expr = self.parse_expr()
         return Return(value=value_expr)
+    
+    def peek(self, k: int = 1):
+        if self.pos + k < len(self.tokens):
+            return self.tokens[self.pos + k]
+        return ("EOF", "")
 
     def parse_stmt(self) -> Stmt:
         ttype, tvalue = self.current
@@ -531,18 +536,17 @@ class Parser:
             self.expect("KEYWORD", "통과")
             return Pass()
         elif ttype == "IDENT":
-            # AugAssign: IDENT
-            if self.pos + 2< len(self.tokens):
-                t1 = self.tokens[self.pos + 1]
-                t2 = self.tokens[self.pos + 2]
-                if t1[0] == "SYMBOL" and t1[1] in ("+", "-", "*", "/") and t2 == ("SYMBOL", "="):
-                    return self.parse_augassign
-            # Assgin: IDENT '=' ...
-            next_type, next_value = ("EOF", "")
-            if self.pos + 1 < len(self.tokens):
-                next_type, next_value = self.tokens[self.pos +1]
-            if next_type == "SYMBOL" and next_value == "=":
+            t1 = self.peek(1)
+            t2 = self.peek(2)
+
+            # AugAssign: IDENT ('+' | '-' | '*' | '/') '=' expr
+            if t1[0] == "SYMBOL" and t1[1] in ("+", "-", "*", "/") and t2 == ("SYMBOL", "="):
+                return self.parse_augassign()
+            
+            # Assign: IDENT '=' expr
+            if t1 == ("SYMBOL", "="):
                 return self.parse_assign()
+            
             # ExprStmt
             expr = self.parse_expr()
             return ExprStmt(value=expr)
