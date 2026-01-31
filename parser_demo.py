@@ -11,6 +11,7 @@ from ast_demo import (
     Expr, Stmt, 
     Program, Assign, Name, Number, BinOp, 
     If, While, For, FunctionDef, Return, Call, ExprStmt,
+    Break, Continue, Pass,
     Bool, NoneLiteral, UnaryOp,
     print_program,
     String,
@@ -471,6 +472,15 @@ class Parser:
             return self.parse_function()
         elif ttype == "KEYWORD" and tvalue == "반환":
             return self.parse_return()
+        elif ttype == "KEYWORD" and tvalue == "중단":
+            self.expect("KEYWORD", "중단")
+            return Break()
+        elif ttype == "KEYWORD" and tvalue == "계속":
+            self.expect("KEYWORD", "계속")
+            return Continue()
+        elif ttype == "KEYWORD" and tvalue == "통과":
+            self.expect("KEYWORD", "통과")
+            return Pass()
         elif ttype == "IDENT":
             next_type, next_value = ("EOF", "")
             if self.pos + 1 < len(self.tokens):

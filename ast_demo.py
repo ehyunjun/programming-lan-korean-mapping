@@ -88,6 +88,18 @@ class Return(Stmt):
     value: Expr | None = None
 
 @dataclass
+class Break(Stmt):
+    pass
+
+@dataclass
+class Continue(Stmt):
+    pass
+
+@dataclass
+class Pass(Stmt):
+    pass
+
+@dataclass
 class FunctionDef(Stmt):
     name: str
     args: List[str]

@@ -8,6 +8,7 @@ from mapping import BUILTIN_HAN_TO_PY
 from ast_demo import (
     Program, Assign, If, While, Name, Number, BinOp,
     Expr, Stmt, For, FunctionDef, Return, Call, ExprStmt,
+    Break, Continue, Pass,
     Bool, NoneLiteral, UnaryOp, String,
 )
 def gen_expr(node: Expr) -> str:
@@ -97,6 +98,14 @@ def gen_stmt(node: Stmt) -> str:
             for line in body_code.splitlines():
                 lines.append("    " + line)
         return "\n".join(lines)
+    
+    # 4.5) break / continue / pass
+    elif isinstance(node, Break):
+        return "break"
+    elif isinstance(node, Continue):
+        return "continue"
+    elif isinstance(node, Pass):
+        return "pass"
     
     # 5) return
     elif isinstance(node, Return):
