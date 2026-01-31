@@ -3,6 +3,8 @@
 # AST(Program / Assign / BinOp / Number / Name)를
 # 실제 파이썬 코드 문자열로 바꿔보는 데모
 
+from mapping import BUILTIN_HAN_TO_PY
+
 from ast_demo import (
     Program, Assign, If, While, Name, Number, BinOp,
     Expr, Stmt, For, FunctionDef, Return, Call, ExprStmt,
@@ -13,10 +15,7 @@ def gen_expr(node: Expr) -> str:
     if isinstance(node, Number):
         return str(node.value)
     elif isinstance(node, Name):
-        if node.id == "출력":
-            return "print"
-        if node.id == "범위":
-            return "range"
+        return BUILTIN_HAN_TO_PY.get(node.id, node.id)
         return node.id
     elif isinstance(node, BinOp):
         left = gen_expr(node.left)

@@ -1,12 +1,12 @@
-# def 에 해당하는 한글 키워드
-DEF_KEYWORD = "정의" # main 브랜치 기준
-
 # lexer_demo.py
-# 한글 키워드 목록
-KEYWORDS = {
-    DEF_KEYWORD, "만약", "아니면", "그외", "반환", "동안", "반복",
-    "참", "거짓", "없음", "그리고", "또는", "아니다", "안에"
-}
+
+from mapping import KW_DEF, HAN_KEYWORDS
+
+# 키워드 판정은 중앙 맵핑 기반으로
+KEYWORDS = HAN_KEYWORDS
+
+# def 에 해당하는 한글 키워드
+DEF_KEYWORD = KW_DEF
 
 SYMBOLS = ["(", ")", ":", ",", "=", "+", "-", "*", "/", "<", ">", "!"]
 
@@ -56,6 +56,10 @@ def simple_lexer(text: str):
             
         # 3) 실제 코드 부분(선행 공백 제거된 부분)을 토큰화
         code = line[i:]
+
+        hash_pos = code.find("#")
+        if hash_pos != -1:
+            code = code[:hash_pos]
 
         j = 0
         while j < len(code):
