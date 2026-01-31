@@ -54,5 +54,3 @@ HAN_KEYWORDS = set(PY_TO_HAN.values())
 
 # 자주 쓰는 편의 상수 (기존 코드 호완용)
 KW_DEF = PY_TO_HAN["def"]
-
-BUILTIN_HAN_TO_PY: dict[str, str] = build_reverse_map(BUILTIN_PY_TO_HAN)

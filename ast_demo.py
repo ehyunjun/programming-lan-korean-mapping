@@ -174,6 +174,12 @@ def print_stmt(node: Stmt, indent: int = 0):
         print(f"{space} body:")
         for s in node.body:
             print_stmt(s, indent + 2)
+    elif isinstance(node, Break):
+        print(f"{space}Break")
+    elif isinstance(node, Continue):
+        print(f"{space}Continue")
+    elif isinstance(node, Pass):
+        print(f"{space}Pass")
     elif isinstance(node, Return):
         print(f"{space}Return")
         if node.value is not None:

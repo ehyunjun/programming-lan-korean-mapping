@@ -17,7 +17,6 @@ def gen_expr(node: Expr) -> str:
         return str(node.value)
     elif isinstance(node, Name):
         return BUILTIN_HAN_TO_PY.get(node.id, node.id)
-        return node.id
     elif isinstance(node, BinOp):
         left = gen_expr(node.left)
         right = gen_expr(node.right)
