@@ -8,7 +8,7 @@ KEYWORDS = HAN_KEYWORDS
 # def 에 해당하는 한글 키워드
 DEF_KEYWORD = KW_DEF
 
-SYMBOLS = ["(", ")", ":", ",", "=", "+", "-", "*", "/", "<", ">", "!"]
+SYMBOLS = ["(", ")", "[", "]", ":", ",", "=", "+", "-", "*", "/", "<", ">", "!"]
 
 def simple_lexer(text: str):
     """

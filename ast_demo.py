@@ -49,6 +49,15 @@ class UnaryOp(Expr):
     op: str
     operand: Expr
 
+@dataclass
+class ListLiteral(Expr):
+    elements: List[Expr]
+
+@dataclass
+class Index(Expr):
+    value: Expr
+    index: Expr
+
 class Stmt:
     """ 문장(Statement)의 부모 클래스 """
     pass
@@ -136,6 +145,16 @@ def print_expr(node: Expr, indent: int = 0):
         print(f"{space}UnaryOp(op={node.op!r})")
         print(f"{space} operand:")
         print_expr(node.operand, indent + 2)
+    elif isinstance(node, ListLiteral):
+        print(f"{space}ListLiteral")
+        for e in node.elements:
+            print_expr(e, indent + 2)
+    elif isinstance(node, Index):
+        print(f"{space}Index")
+        print(f"{space} value:")
+        print_expr(node.value, indent + 2)
+        print(f"{space} index:")
+        print_expr(node.index, indent + 2)
     else:
         print(f"{space}<Unknown Expr {node}>")
 

@@ -14,7 +14,7 @@ from ast_demo import (
     Break, Continue, Pass,
     Bool, NoneLiteral, UnaryOp,
     print_program,
-    String,
+    String, ListLiteral, Index,
 )
 
 # 연산자 집합
@@ -197,38 +197,54 @@ class Parser:
         factor ::= NUMBER
                 | 불리언/없음
                 | IDENT / 함수 호출
-                | '(' expr ')'
+                | '(' expr ')' | '[' ... ']'
         """
         tok_type, tok_value = self.current
 
         # 숫자
         if tok_type == "NUMBER":
             self.advance()
-            return Number(int(tok_value))
+            node: Expr = Number(int(tok_value))
         
-        if tok_type == "STRING":
+        # 문자열
+        elif tok_type == "STRING":
             self.advance()
-            return String(tok_value)
+            node = String(tok_value)
         
         # 불리언 / None 리터럴
-        if tok_type == "KEYWORD" and tok_value in ("참", "거짓", "없음"):
+        elif tok_type == "KEYWORD" and tok_value in ("참", "거짓", "없음"):
             self.advance()
             if tok_value == "참":
-                return Bool(True)
+                node = Bool(True)
             elif tok_value == "거짓":
-                return Bool(False)
+                node = Bool(False)
             else:
-                return NoneLiteral()
+                node = NoneLiteral()
         
         # 괄호식: (expr)
-        if tok_type == "SYMBOL" and tok_value == "(":
+        elif tok_type == "SYMBOL" and tok_value == "(":
             self.advance() # '(' 소비
-            inner = self.parse_expr()
+            node = self.parse_expr()
             self.expect("SYMBOL", ")")
-            return inner
+        
+        # 리스트 리터럴: [a, b, c]
+        elif tok_type == "SYMBOL" and tok_value == "[":
+            self.advance()
+            elements: list[Expr] = []
+
+            if not (self.current[0] == "SYMBOL" and self.current[1] == "]"):
+                while True:
+                    elements.append(self.parse_expr())
+                    if self.current[0] == "SYMBOL" and self.current[1] == ",":
+                        self.advance()
+                        continue
+                    break
+
+            self.expect("SYMBOL", "]")
+            node = ListLiteral(elements=elements)
         
         # 이름(변수 또는 함수호출)
-        if tok_type == "IDENT":
+        elif tok_type == "IDENT":
             ident_name = tok_value
             self.advance()
 
@@ -238,23 +254,25 @@ class Parser:
                 args: list[Expr] = []
                 if not (self.current[0] == "SYMBOL" and self.current[1] == ")"):
                     while True:
-                        arg_expr = self.parse_expr()
-                        args.append(arg_expr)
-
+                        args.append(self.parse_expr())
                         if self.current[0] == "SYMBOL" and self.current[1] == ",":
                             self.advance() # ',' 소비
                             continue
                         break
-            
-                # ')'
                 self.expect("SYMBOL", ")")
-                return Call(func=Name(ident_name), args=args)
-            
-            # 그냥 변수 이름
-            return Name(ident_name)
-        
-        # 그 외는 에러
-        raise SyntaxError(f" 숫자, 이름, 혹은 괄호로 시작하는 표현식이 와야 하는데 {self.current}를 만났습니다.")
+                node = Call(func=Name(ident_name), args=args)
+            else:
+                node = Name(ident_name)
+        else:
+            raise SyntaxError(f"숫자/문자열/이름/괄호/리스트로 시작하는 표현식이 와야 하는데 {self.current}를 만났습니다.")
+
+        # postfix: 인덱싱 반복 지원
+        while self.current[0] == "SYMBOL" and self.current[1] == "[":
+            self.advance()
+            idx = self.parse_expr()
+            self.expect("SYMBOL", "]")
+            node = Index(value=node, index=idx)
+        return node
     
     # =====================
     #  블록(suite) 파싱
@@ -517,7 +535,7 @@ if __name__ == "__main__":
 동안 값 < 20:
     값 = 값 + 2
 
-반복 i = 0, 3:
+반복 i 안에 범위(0, 3):
     값 = 값 + i
 """
 
