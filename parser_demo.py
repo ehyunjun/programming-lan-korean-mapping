@@ -119,43 +119,51 @@ class Parser:
 
         while True:
             ttype, tvalue = self.current
-            if ttype != "SYMBOL":
-                break
+
+            # 1) "안에" (in) : KEYWORD 연산자
+            if ttype == "KEYWORD" and tvalue == "안에":
+                self.advance()
+                op = "in"
+
+            # 2) 기존 비교 연산자들: SYMBOL 기반 (<, >, <=, >=, ==, !=)
+            elif ttype == "SYMBOL":
+                op = None
+                next_tok = self.tokens[self.pos + 1] if self.pos + 1 < len(self.tokens) else("EOF", "")
+
+                if tvalue in ("<", ">"):
+                    if next_tok[0] == "SYMBOL" and next_tok[1] == "=":
+                        op = tvalue + "="
+                        self.advance()
+                        self.advance()
+                    else:
+                        op = tvalue
+                        self.advance()
+
+                elif tvalue == "=":
+                    if next_tok[0] == "SYMBOL" and next_tok[1] == "=":
+                        op = "=="
+                        self.advance()
+                        self.advance()
+                    else:
+                        break
+                elif tvalue =="!":
+                    if next_tok[0] == "SYMBOL" and next_tok[1] == "=":
+                        op = "!="
+                        self.advance()
+                        self.advance()
+                    else:
+                        break
+                else:
+                    break
             
-            op = None
-
-            next_tok = self.tokens[self.pos + 1] if self.pos + 1 < len(self.tokens) else ("EOF", "")
-
-            if tvalue in ("<", ">"):
-                if next_tok[0] == "SYMBOL" and next_tok[1] == "=":
-                    op = tvalue + "="
-                    self.advance()
-                    self.advance()
-                else:
-                    op = tvalue
-                    self.advance()
-            elif tvalue == "=":
-                if next_tok[0] == "SYMBOL" and next_tok[1] == "=":
-                    op = "=="
-                    self.advance()
-                    self.advance()
-                else:
-                    break
-            elif tvalue == "!":
-                if next_tok[0] == "SYMBOL" and next_tok[1] == "=":
-                    op = "!="
-                    self.advance()
-                    self.advance()
-                else:
-                    break
             else:
                 break
 
             right = self.parse_sum()
-            left = BinOp(left=left, op=op, right=right) 
-
+            left = BinOp(left=left, op=op, right=right)
+        
         return left
-       
+    
     def parse_sum(self) -> Expr:
         """
         sum ::= term (('+' | '-') term)*
