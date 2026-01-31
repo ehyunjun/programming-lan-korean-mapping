@@ -10,7 +10,7 @@ from lexer_demo import simple_lexer, DEF_KEYWORD
 from tokens import ADD_OPS, MUL_OPS
 from ast_demo import (
     Expr, Stmt, 
-    Program, Assign, Name, Number, BinOp, 
+    Program, Assign, AugAssign, Name, Number, BinOp, 
     If, While, For, FunctionDef, Return, Call, ExprStmt,
     Break, Continue, Pass,
     Bool, NoneLiteral, UnaryOp,
@@ -58,7 +58,12 @@ class Parser:
             if self.current[0] == "NEWLINE":
                 self.advance()
                 continue
-            body.append(self.parse_stmt())
+            before = self.pos
+            stmt = self.parse_stmt()
+            if self.pos == before:
+                near = self.tokens[self.pos:self.pos+10]
+                raise RuntimeError(f"[parser stuck] pos={self.pos}, current={self.current}, next10={near}")
+            body.append(stmt)
         return Program(body=body)
     
     # =======================
@@ -196,6 +201,13 @@ class Parser:
         """
         tok_type, tok_value = self.current
 
+        # 단항 + / -
+        if tok_type == "SYMBOL" and tok_value in ("+", "-"):
+            self.advance()
+            operand = self.parse_factor()
+            node: Expr = UnaryOp(op=tok_value, operand=operand)
+            return node
+
         # 숫자
         if tok_type == "NUMBER":
             self.advance()
@@ -268,6 +280,22 @@ class Parser:
             self.expect("SYMBOL", "]")
             node = Index(value=node, index=idx)
         return node
+    
+    def parse_augassign(self) -> AugAssign:
+        """
+        복합대입: IDENT ('+'|'-'|'*'|'/') '=' expr
+        예: 값 += 1 (토큰은 '+', '='로 분리되어 들어옴)
+        """
+        _, ident_value = self.expect("IDENT")
+        target = Name(ident_value)
+
+        op_type, op_value = self.expect("SYMBOL")
+        if op_value not in ("+", "-", "*", "/"):
+            raise SyntaxError(f"복합대입 연산자는 +, -, *, / 중 하나여야 합니다: {(op_type, op_value)}")
+        
+        self.expect("SYMBOL", "=")
+        value_expr = self.parse_expr()
+        return AugAssign(target=target, op=op_value, value=value_expr)
     
     # =====================
     #  블록(suite) 파싱
@@ -503,14 +531,22 @@ class Parser:
             self.expect("KEYWORD", "통과")
             return Pass()
         elif ttype == "IDENT":
+            # AugAssign: IDENT
+            if self.pos + 2< len(self.tokens):
+                t1 = self.tokens[self.pos + 1]
+                t2 = self.tokens[self.pos + 2]
+                if t1[0] == "SYMBOL" and t1[1] in ("+", "-", "*", "/") and t2 == ("SYMBOL", "="):
+                    return self.parse_augassign
+            # Assgin: IDENT '=' ...
             next_type, next_value = ("EOF", "")
             if self.pos + 1 < len(self.tokens):
-                next_type, next_value = self.tokens[self.pos + 1]
+                next_type, next_value = self.tokens[self.pos +1]
             if next_type == "SYMBOL" and next_value == "=":
                 return self.parse_assign()
-            else:
-                expr = self.parse_expr()
-                return ExprStmt(value=expr)
+            # ExprStmt
+            expr = self.parse_expr()
+            return ExprStmt(value=expr)
+        
         else:
             raise SyntaxError(f"문장이 시작될 수 없는 토큰: {self.current}")
         

@@ -68,6 +68,12 @@ class Assign(Stmt):
     value: Expr   # 오른쪽: 값(표현식)
 
 @dataclass
+class AugAssign(Stmt):
+    target: Name
+    op: str      # "+", "-", "*", "/"
+    value: Expr
+
+@dataclass
 class ExprStmt(Stmt):
     value: Expr   # 오른쪽: 값(표현식)
 
@@ -162,6 +168,12 @@ def print_stmt(node: Stmt, indent: int = 0):
     space = " " * indent
     if isinstance(node, Assign):
         print(f"{space}Assign")
+        print(f"{space} target:")
+        print_expr(node.target, indent + 2)
+        print(f"{space} value:")
+        print_expr(node.value, indent + 2)
+    elif isinstance(node, AugAssign):
+        print(f"{space}AugAssign(op={node.op!r})")
         print(f"{space} target:")
         print_expr(node.target, indent + 2)
         print(f"{space} value:")

@@ -6,7 +6,7 @@
 from mapping import BUILTIN_HAN_TO_PY
 
 from ast_demo import (
-    Program, Assign, If, While, Name, Number, BinOp,
+    Program, Assign, AugAssign, If, While, Name, Number, BinOp,
     Expr, Stmt, For, FunctionDef, Return, Call, ExprStmt,
     Break, Continue, Pass,
     Bool, NoneLiteral, UnaryOp, String,
@@ -17,13 +17,16 @@ def gen_expr(node: Expr) -> str:
     if isinstance(node, Number):
         return str(node.value)
     elif isinstance(node, Name):
-        return BUILTIN_HAN_TO_PY.get(node.id, node.id)
+        return node.id
     elif isinstance(node, BinOp):
         left = gen_expr(node.left)
         right = gen_expr(node.right)
         return f"({left} {node.op} {right})"
     elif isinstance(node, Call):
-        func_code = gen_expr(node.func)
+        if isinstance(node.func, Name):
+            func_code = BUILTIN_HAN_TO_PY.get(node.func.id, node.func.id)
+        else:
+            func_code = gen_expr(node.func)
         args_code = ", ".join(gen_expr(a) for a in node.args)
         return f"{func_code}({args_code})"
     elif isinstance(node, ListLiteral):
@@ -56,6 +59,12 @@ def gen_stmt(node: Stmt) -> str:
         target = node.target.id
         value_code = gen_expr(node.value)
         return f"{target} = {value_code}"
+    
+    # 1.5) AugAssign (+=, -=, *=, /=)
+    elif isinstance(node, AugAssign):
+        target = node.target.id
+        value_code = gen_expr(node.value)
+        return f"{target} {node.op}= {value_code}"
     
     # 2) if 문
     elif isinstance(node, If):
