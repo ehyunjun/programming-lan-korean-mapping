@@ -58,15 +58,15 @@ def gen_stmt(node: Stmt) -> str:
     
     # 1) 대입문
     if isinstance(node, Assign):
-        target = node.target.id
+        target_code = gen_expr(node.target)
         value_code = gen_expr(node.value)
-        return f"{target} = {value_code}"
+        return f"{target_code} = {value_code}"
     
     # 1.5) AugAssign (+=, -=, *=, /=)
     elif isinstance(node, AugAssign):
-        target = node.target.id
+        target_code = gen_expr(node.target)
         value_code = gen_expr(node.value)
-        return f"{target} {node.op}= {value_code}"
+        return f"{target_code} {node.op}= {value_code}"
     
     # 2) if 문
     elif isinstance(node, If):

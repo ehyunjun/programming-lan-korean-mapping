@@ -69,12 +69,12 @@ class Stmt:
 
 @dataclass
 class Assign(Stmt):
-    target: Name  # 왼쪽: 대입 대상 변수
+    target: Expr  # 왼쪽: 대입 대상 변수
     value: Expr   # 오른쪽: 값(표현식)
 
 @dataclass
 class AugAssign(Stmt):
-    target: Name
+    target: Expr
     op: str      # "+", "-", "*", "/"
     value: Expr
 

@@ -205,8 +205,9 @@ class Parser:
         if tok_type == "SYMBOL" and tok_value in ("+", "-"):
             self.advance()
             operand = self.parse_factor()
-            node: Expr = UnaryOp(op=tok_value, operand=operand)
-            return node
+            return UnaryOp(op=tok_value, operand=operand)
+        
+        node: Expr
 
         # 숫자
         if tok_type == "NUMBER":
@@ -297,18 +298,41 @@ class Parser:
             break
         return node
     
+    def parse_target(self) -> Expr:
+        """대입 타겟: Name ('.' IDENT | '[' expr ']')* (호출()은 금지)"""
+        _, ident_value = self.expect("IDENT")
+        node: Expr
+        node = Name(ident_value)
+
+        while True:
+            if self.current[0] == "SYMBOL" and self.current[1] == "[":
+                self.advance()
+                idx = self.parse_expr()
+                self.expect("SYMBOL", "]")
+                node = Index(value=node, index=idx)
+                continue
+
+            if self.current[0] == "SYMBOL" and self.current[1] == ".":
+                self.advance()
+                if self.current[0] != "IDENT":
+                    raise SyntaxError(f"'.' 다음에는 IDENT(속성 이름)이 와야 합니다: {self.current}")
+                _, attr = self.expect("IDENT")
+                node = Attribute(value=node, attr=attr)
+                continue
+            
+            break
+        
+        return node
+    
     def parse_augassign(self) -> AugAssign:
         """
         복합대입: IDENT ('+'|'-'|'*'|'/') '=' expr
         예: 값 += 1 (토큰은 '+', '='로 분리되어 들어옴)
         """
-        _, ident_value = self.expect("IDENT")
-        target = Name(ident_value)
-
+        target = self.parse_target()
         _, op_value = self.expect("SYMBOL")
         if op_value not in ("+", "-", "*", "/"):
             raise SyntaxError(f"복합대입 연산자는 +, -, *, / 중 하나여야 합니다: {op_value!r}")
-        
         self.expect("SYMBOL", "=")
         value_expr = self.parse_expr()
         return AugAssign(target=target, op=op_value, value=value_expr)
@@ -359,16 +383,9 @@ class Parser:
         대입문: IDENT '=' expr
         예:     값     = 1 + 2
         """
-        # 1) 왼쪽 변수 이름
-        _, ident_value = self.expect("IDENT")
-        target = Name(ident_value)
-
-        # 2) '=' 기호
+        target = self.parse_target()
         self.expect("SYMBOL", "=")
-
-        # 3) 오른쪽 표현식
         value_expr = self.parse_expr()
-
         return Assign(target=target, value=value_expr)
 
     def parse_if(self) -> If:
@@ -552,23 +569,25 @@ class Parser:
             self.expect("KEYWORD", "통과")
             return Pass()
         elif ttype == "IDENT":
-            t1 = self.peek(1)
-            t2 = self.peek(2)
+            pos0 = self.pos
 
-            # AugAssign: IDENT ('+' | '-' | '*' | '/') '=' expr
-            if t1[0] == "SYMBOL" and t1[1] in ("+", "-", "*", "/") and t2 == ("SYMBOL", "="):
-                return self.parse_augassign()
-            
-            # Assign: IDENT '=' expr
-            if t1 == ("SYMBOL", "="):
-                return self.parse_assign()
-            
-            # ExprStmt
+            try:
+                _ = self.parse_target()
+                if self.current == ("SYMBOL", "="):
+                    self.pos = pos0
+                    return self.parse_assign()
+                
+                t1 = self.current
+                t2 = self.peek(1)
+                if t1[0] == "SYMBOL" and t1[1] in ("+", "-", "*", "/") and t2 == ("SYMBOL", "="):
+                    self.pos = pos0
+                    return self.parse_augassign()
+            except SyntaxError:
+                pass
+
+            self.pos = pos0
             expr = self.parse_expr()
             return ExprStmt(value=expr)
-        
-        else:
-            raise SyntaxError(f"문장이 시작될 수 없는 토큰: {self.current}")
         
 if __name__ == "__main__":
     # 1) 한글 코드
