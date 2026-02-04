@@ -6,7 +6,7 @@ from __future__ import annotations
 # 렉서가 SYMBOL로 인식할 단일 문자들
 SYMBOLS: list[str] = [
     "(", ")", "[", "]",
-    ":", ",",
+    ":", ",", ".",
     "=", "+", "-", "*", "/",
     "<", ">", "!",
 ]

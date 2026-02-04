@@ -15,7 +15,7 @@ from ast_demo import (
     Break, Continue, Pass,
     Bool, NoneLiteral, UnaryOp,
     print_program,
-    String, ListLiteral, Index,
+    String, ListLiteral, Index, Attribute,
 )
 
 class Parser:
@@ -254,31 +254,44 @@ class Parser:
         elif tok_type == "IDENT":
             ident_name = tok_value
             self.advance()
+            node = Name(ident_name)
+        else:
+            raise SyntaxError(f"숫자/문자열/이름/괄호/리스트로 시작하는 표현식이 와야하는데 {self.current}를 만났습니다.")
+        
+        # postfix: 호출/인덱싱/속성접근을 연쇄로 지원
+        while True:
+            # 인덱싱: x[0]
+            if self.current[0] == "SYMBOL" and self.current[1] == "[":
+                self.advance()
+                idx = self.parse_expr()
+                self.expect("SYMBOL", "]")
+                node = Index(value=node, index=idx)
+                continue
+            # 속성 접근: x.y
+            if self.current[0] == "SYMBOL" and self.current[1] == ".":
+                self.advance()
+                if self.current[0] != "IDENT":
+                    raise SyntaxError(f"'.' 다음에는 IDENT(속성 이름)이 와야 합니다: {self.current}")
+                
+                _, attr = self.expect("IDENT")
+                node = Attribute(value=node, attr=attr)
+                continue
 
-            # 함수 호출인지 확인: 이름 뒤에 '(' 이 오면 호출
+            # 함수/메서드 호출: f(...), obj.m(...)
             if self.current[0] == "SYMBOL" and self.current[1] == "(":
-                self.advance() # '(' 소비
+                self.advance()
                 args: list[Expr] = []
                 if not (self.current[0] == "SYMBOL" and self.current[1] == ")"):
                     while True:
                         args.append(self.parse_expr())
                         if self.current[0] == "SYMBOL" and self.current[1] == ",":
-                            self.advance() # ',' 소비
+                            self.advance()
                             continue
                         break
                 self.expect("SYMBOL", ")")
-                node = Call(func=Name(ident_name), args=args)
-            else:
-                node = Name(ident_name)
-        else:
-            raise SyntaxError(f"숫자/문자열/이름/괄호/리스트로 시작하는 표현식이 와야 하는데 {self.current}를 만났습니다.")
-
-        # postfix: 인덱싱 반복 지원
-        while self.current[0] == "SYMBOL" and self.current[1] == "[":
-            self.advance()
-            idx = self.parse_expr()
-            self.expect("SYMBOL", "]")
-            node = Index(value=node, index=idx)
+                node = Call(func=node, args=args)
+                continue
+            break
         return node
     
     def parse_augassign(self) -> AugAssign:

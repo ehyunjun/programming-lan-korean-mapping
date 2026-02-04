@@ -58,6 +58,10 @@ class Index(Expr):
     value: Expr
     index: Expr
 
+@dataclass
+class Attribute(Expr):
+    value: Expr
+    attr: str
 class Stmt:
     """ 문장(Statement)의 부모 클래스 """
     pass
@@ -155,6 +159,10 @@ def print_expr(node: Expr, indent: int = 0):
         print(f"{space}ListLiteral")
         for e in node.elements:
             print_expr(e, indent + 2)
+    elif isinstance(node, Attribute):
+        print(f"{space}Atrribute(attr={node.attr!r})")
+        print(f"{space} value:")
+        print_expr(node.value, indent + 2)
     elif isinstance(node, Index):
         print(f"{space}Index")
         print(f"{space} value:")
@@ -170,6 +178,10 @@ def print_stmt(node: Stmt, indent: int = 0):
         print(f"{space}Assign")
         print(f"{space} target:")
         print_expr(node.target, indent + 2)
+        print(f"{space} value:")
+        print_expr(node.value, indent + 2)
+    elif isinstance(node, ExprStmt):
+        print(f"{space}ExprStmt")
         print(f"{space} value:")
         print_expr(node.value, indent + 2)
     elif isinstance(node, AugAssign):

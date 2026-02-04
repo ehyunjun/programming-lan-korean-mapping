@@ -10,7 +10,7 @@ from ast_demo import (
     Expr, Stmt, For, FunctionDef, Return, Call, ExprStmt,
     Break, Continue, Pass,
     Bool, NoneLiteral, UnaryOp, String,
-    ListLiteral, Index
+    ListLiteral, Index, Attribute,
 )
 def gen_expr(node: Expr) -> str:
     """ 표현식(Expr) -> 파이썬 코드 문자열 """
@@ -32,6 +32,8 @@ def gen_expr(node: Expr) -> str:
     elif isinstance(node, ListLiteral):
         elems = ", ".join(gen_expr(e) for e in node.elements)
         return f"[{elems}]"
+    elif isinstance(node, Attribute):
+        return f"{gen_expr(node.value)}.{node.attr}"
     elif isinstance(node, Index):
         return f"{gen_expr(node.value)}[{gen_expr(node.index)}]"
     elif isinstance(node, String):
