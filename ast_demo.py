@@ -18,7 +18,8 @@ class String(Expr):
 
 @dataclass
 class Number(Expr):
-    value: int
+    value: int | float
+    raw: str | None = None
 
 @dataclass
 class Name(Expr):

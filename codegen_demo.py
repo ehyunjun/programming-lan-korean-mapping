@@ -15,7 +15,7 @@ from ast_demo import (
 def gen_expr(node: Expr) -> str:
     """ 표현식(Expr) -> 파이썬 코드 문자열 """
     if isinstance(node, Number):
-        return str(node.value)
+        return node.raw if node.raw is not None else str(node.value)
     elif isinstance(node, Name):
         return node.id
     elif isinstance(node, BinOp):

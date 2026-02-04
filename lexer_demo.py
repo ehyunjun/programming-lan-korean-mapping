@@ -83,6 +83,34 @@ def simple_lexer(text: str):
                 tokens.append(("STRING", buf))
                 continue
 
+            # 숫자 리터럴: 123 / 3.14 / 3. / .5 / 1e - 3 / 1.2e + 3
+            if ch.isdigit() or (ch == "." and (j + 1) < len(code) and code[j + 1].isdigit()):
+                start = j
+                n = len(code)
+                # 정수부
+                while j < n and code[j].isdigit():
+                    j += 1
+                
+                # 소수점: '.' + 소수부
+                if j < n and code[j] == ".":
+                    j += 1
+                    while j < n and code[j].isdigit():
+                        j += 1
+
+                # 지수부: e/E (+/-)? digits
+                if j < n and code[j] in ("e", "E"):
+                    k = j + 1
+                    if k < n and code[k] in ("+", "-"):
+                        k += 1
+                    # 지수부는 최소 1자리 숫자 필요
+                    if k < n and code[k].isdigit():
+                        j = k + 1
+                        while j < n and code[j].isdigit():
+                            j += 1
+                    
+                tokens.append(("NUMBER", code[start:j]))
+                continue
+
             # 심볼 (연산자, 괄호 등)
             if ch in SYMBOLS:
                 tokens.append(("SYMBOL", ch))

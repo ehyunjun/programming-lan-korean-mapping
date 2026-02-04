@@ -211,7 +211,10 @@ class Parser:
         # 숫자
         if tok_type == "NUMBER":
             self.advance()
-            node: Expr = Number(int(tok_value))
+            if ("." in tok_value) or ("e" in tok_value) or ("E" in tok_value):
+                node = Number(float(tok_value), raw=tok_value)
+            else:
+                node = Number(int(tok_value), raw=tok_value)
         
         # 문자열
         elif tok_type == "STRING":
