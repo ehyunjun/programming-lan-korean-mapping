@@ -10,6 +10,7 @@ SYMBOLS: list[str] = [
     "=", "+", "-", "*", "/",
     "<", ">", "!",
 ]
-
+MULTI_SYMBOLS: list[str] = ["<=", ">=", "==", "!="]
+COMP_OPS: set[str] = {"<", ">", "<=", ">=", "==", "!=", "in"}
 ADD_OPS: set[str] = {"+", "-"}
 MUL_OPS: set[str] = {"*", "/"}

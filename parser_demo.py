@@ -7,7 +7,7 @@
 
 from codegen_demo import gen_program
 from lexer_demo import simple_lexer, DEF_KEYWORD
-from tokens import ADD_OPS, MUL_OPS
+from tokens import ADD_OPS, MUL_OPS, COMP_OPS
 from ast_demo import (
     Expr, Stmt, 
     Program, Assign, AugAssign, Name, Number, BinOp, 
@@ -16,6 +16,7 @@ from ast_demo import (
     Bool, NoneLiteral, UnaryOp,
     print_program,
     String, ListLiteral, Index, Attribute,
+    Compare,
 )
 
 class Parser:
@@ -112,57 +113,37 @@ class Parser:
     
     def parse_comparison(self) -> Expr:
         """
-        comparison ::= sum (('<' | '>') sum)*
-        비교 연산(<, >)은 덧셈/곱셈보다 우선순위가 낮다.
+        comparison ::= sum ((comp_op | "안에) sum)*
+        비교 연산(<, >, <=, >=, ==, !=, in)은 덧셈/곱셈보다 우선순위가 낮다.
         """
         left = self.parse_sum()
+
+        ops: list[str] = []
+        comparators: list[Expr] = []
 
         while True:
             ttype, tvalue = self.current
 
-            # 1) "안에" (in) : KEYWORD 연산자
+            # 1) "안에" (in)
             if ttype == "KEYWORD" and tvalue == "안에":
                 self.advance()
                 op = "in"
 
-            # 2) 기존 비교 연산자들: SYMBOL 기반 (<, >, <=, >=, ==, !=)
-            elif ttype == "SYMBOL":
-                op = None
-                next_tok = self.tokens[self.pos + 1] if self.pos + 1 < len(self.tokens) else("EOF", "")
-
-                if tvalue in ("<", ">"):
-                    if next_tok[0] == "SYMBOL" and next_tok[1] == "=":
-                        op = tvalue + "="
-                        self.advance()
-                        self.advance()
-                    else:
-                        op = tvalue
-                        self.advance()
-
-                elif tvalue == "=":
-                    if next_tok[0] == "SYMBOL" and next_tok[1] == "=":
-                        op = "=="
-                        self.advance()
-                        self.advance()
-                    else:
-                        break
-                elif tvalue =="!":
-                    if next_tok[0] == "SYMBOL" and next_tok[1] == "=":
-                        op = "!="
-                        self.advance()
-                        self.advance()
-                    else:
-                        break
-                else:
-                    break
-            
+            # 2) 기존 비교 연산자들
+            elif ttype == "SYMBOL" and tvalue in COMP_OPS:
+                op = tvalue
+                self.advance()
             else:
                 break
 
             right = self.parse_sum()
-            left = BinOp(left=left, op=op, right=right)
+            ops.append(op)
+            comparators.append(right)
+
+        if not ops:
+            return left
         
-        return left
+        return Compare(left=left, ops=ops, comparators=comparators)
     
     def parse_sum(self) -> Expr:
         """

@@ -32,6 +32,12 @@ class BinOp(Expr):
     right: Expr
 
 @dataclass
+class Compare(Expr):
+    left: Expr
+    ops: List[str]
+    comparators: List[Expr]
+
+@dataclass
 class Call(Expr):
     func: Expr
     args: List[Expr]
@@ -139,6 +145,13 @@ def print_expr(node: Expr, indent: int = 0):
         print_expr(node.left, indent + 2)
         print(f"{space} right:")
         print_expr(node.right, indent + 2)
+    elif isinstance(node, Compare):
+        print(f"{space}Compare(ops={node.ops!r})")
+        print(f"{space} left:")
+        print_expr(node.left, indent + 2)
+        print(f"{space} comparators:")
+        for c in node.comparators:
+            print_expr(c, indent + 2)
     elif isinstance(node, Call):
         print(f"{space}Call")
         print(f"{space} func:")
@@ -161,7 +174,7 @@ def print_expr(node: Expr, indent: int = 0):
         for e in node.elements:
             print_expr(e, indent + 2)
     elif isinstance(node, Attribute):
-        print(f"{space}Atrribute(attr={node.attr!r})")
+        print(f"{space}Attribute(attr={node.attr!r})")
         print(f"{space} value:")
         print_expr(node.value, indent + 2)
     elif isinstance(node, Index):

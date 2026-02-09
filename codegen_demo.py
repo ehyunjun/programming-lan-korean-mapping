@@ -11,6 +11,7 @@ from ast_demo import (
     Break, Continue, Pass,
     Bool, NoneLiteral, UnaryOp, String,
     ListLiteral, Index, Attribute,
+    Compare,
 )
 def gen_expr(node: Expr) -> str:
     """ 표현식(Expr) -> 파이썬 코드 문자열 """
@@ -22,6 +23,12 @@ def gen_expr(node: Expr) -> str:
         left = gen_expr(node.left)
         right = gen_expr(node.right)
         return f"({left} {node.op} {right})"
+    elif isinstance(node, Compare):
+        parts = [gen_expr(node.left)]
+        for op, cmp_ in zip(node.ops, node.comparators):
+            parts.append(op)
+            parts.append(gen_expr(cmp_))
+        return f"({' '.join(parts)})"
     elif isinstance(node, Call):
         if isinstance(node.func, Name):
             func_code = BUILTIN_HAN_TO_PY.get(node.func.id, node.func.id)

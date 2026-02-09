@@ -1,7 +1,7 @@
 # lexer_demo.py
 
 from mapping import KW_DEF, HAN_KEYWORDS
-from tokens import SYMBOLS
+from tokens import SYMBOLS, MULTI_SYMBOLS
 
 # 키워드 판정은 중앙 맵핑 기반으로
 KEYWORDS = HAN_KEYWORDS
@@ -112,6 +112,12 @@ def simple_lexer(text: str):
                 continue
 
             # 심볼 (연산자, 괄호 등)
+            two = code[j:j+2]
+            if two in MULTI_SYMBOLS:
+                tokens.append(("SYMBOL", two))
+                j += 2
+                continue
+            # 한 글자 심볼
             if ch in SYMBOLS:
                 tokens.append(("SYMBOL", ch))
                 j += 1
