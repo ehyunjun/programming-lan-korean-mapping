@@ -10,7 +10,7 @@ from ast_demo import (
     Expr, Stmt, For, FunctionDef, Return, Call, ExprStmt,
     Break, Continue, Pass,
     Bool, NoneLiteral, UnaryOp, String,
-    ListLiteral, TupleLiteral, SetLiteral, DictLiteral, Index, Attribute,
+    ListLiteral, TupleLiteral, SetLiteral, DictLiteral, Index, Slice, Attribute,
     Compare,
 )
 def gen_expr(node: Expr) -> str:
@@ -59,6 +59,15 @@ def gen_expr(node: Expr) -> str:
         return f"{gen_expr(node.value)}.{node.attr}"
     elif isinstance(node, Index):
         return f"{gen_expr(node.value)}[{gen_expr(node.index)}]"
+    elif isinstance(node, Slice):
+        start = "" if node.start is None else gen_expr(node.start)
+        stop = "" if node.stop is None else gen_expr(node.stop)
+        if node.step is None:
+            inside = f"{start}:{stop}"
+        else:
+            step = "" if node.step is None else gen_expr(node.step)
+            inside = f"{start}:{stop}:{step}"
+        return f"{gen_expr(node.value)}[{inside}]"
     elif isinstance(node, String):
         return repr(node.value)
     elif isinstance(node, Bool):

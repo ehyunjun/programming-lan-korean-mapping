@@ -15,7 +15,7 @@ from ast_demo import (
     Break, Continue, Pass,
     Bool, NoneLiteral, UnaryOp,
     print_program,
-    String, ListLiteral, Index, Attribute,
+    String, ListLiteral, Index, Slice, Attribute,
     TupleLiteral, SetLiteral, DictLiteral,
     Compare,
 )
@@ -327,13 +327,47 @@ class Parser:
         
         # postfix: 호출/인덱싱/속성접근을 연쇄로 지원
         while True:
-            # 인덱싱: x[0]
+            # 인덱싱/슬라이싱: x[0], x[1:3], x[:], x[::2]
             if self.current[0] == "SYMBOL" and self.current[1] == "[":
                 self.advance()
-                idx = self.parse_expr()
-                self.expect("SYMBOL", "]")
-                node = Index(value=node, index=idx)
+
+                if self.current == ("SYMBOL", "]"):
+                    raise SyntaxError("빈 인덱스는 허용되지 않습니다: x[]")
+                
+                # start / first
+                start = None
+                first = None
+                if self.current != ("SYMBOL", ":"):
+                    first = self.parse_expr()
+                
+                # ':'가 있으면 슬라이스, 아니면 인덱싱
+                if self.current == ("SYMBOL", ":"):
+                    start = first
+                    self.advance()
+
+                    # stop
+                    if self.current not in (("SYMBOL", ":"), ("SYMBOL", "]")):
+                        stop = self.parse_expr()
+                    else:
+                        stop = None
+                    
+                    # step(optional)
+                    step = None
+                    if self.current == ("SYMBOL", ":"):
+                        self.advance()
+                        if self.current != ("SYMBOL", "]"):
+                            step = self.parse_expr()
+                    
+                    self.expect("SYMBOL", "]")
+                    node = Slice(value=node, start=start, stop=stop, step=step)
+                else:
+                    if first is None:
+                        raise SyntaxError("인덱싱 표현식이 필요합니다.")
+                    self.expect("SYMBOL", "]")
+                    node = Index(value=node, index=first)
+                
                 continue
+
             # 속성 접근: x.y
             if self.current[0] == "SYMBOL" and self.current[1] == ".":
                 self.advance()
@@ -370,9 +404,38 @@ class Parser:
         while True:
             if self.current[0] == "SYMBOL" and self.current[1] == "[":
                 self.advance()
-                idx = self.parse_expr()
-                self.expect("SYMBOL", "]")
-                node = Index(value=node, index=idx)
+                if self.current == ("SYMBOL", "]"):
+                    raise SyntaxError("빈 인덱스는 허용되지 않습니다: x[]")
+                
+                first = None
+                if self.current != ("SYMBOL", ":"):
+                    first = self.parse_expr()
+
+                # ":" 면 슬라이스, 아니면 인덱싱
+                if self.current == ("SYMBOL", ":"):
+                    start = first
+                    self.advance()
+
+                    # stop
+                    if self.current not in (("SYMBOL", ":"), ("SYMBOL", "]")):
+                        stop = self.parse_expr()
+                    else:
+                        stop = None
+
+                    # step(optional)
+                    step = None
+                    if self.current == ("SYMBOL", ":"):
+                        self.advance()
+                        if self.current != ("SYMBOL", "]"):
+                            step = self.parse_expr()
+                    
+                    self.expect("SYMBOL", "]")
+                    node = Slice(value=node, start=start, stop=stop, step=step)
+                else:
+                    if first is None:
+                        raise SyntaxError("인덱싱 표현식이 필요합니다.")
+                    self.expect("SYMBOL", "]")
+                    node = Index(value=node, index=first)
                 continue
 
             if self.current[0] == "SYMBOL" and self.current[1] == ".":

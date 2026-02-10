@@ -4,7 +4,7 @@
 # 그 트리를 예쁘게 출력해 보는 데모.
 
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 # AST 노드 타입들
 
@@ -76,6 +76,13 @@ class DictLiteral(Expr):
 class Index(Expr):
     value: Expr
     index: Expr
+
+@dataclass
+class Slice(Expr):
+    value: Expr
+    start: Optional[Expr]
+    stop: Optional[Expr]
+    step: Optional[Expr]
 
 @dataclass
 class Attribute(Expr):
@@ -210,6 +217,21 @@ def print_expr(node: Expr, indent: int = 0):
         print_expr(node.value, indent + 2)
         print(f"{space} index:")
         print_expr(node.index, indent + 2)
+    elif isinstance(node, Slice):
+        print(f"{space}Slice")
+        print(f"{space} value:")
+        print_expr(node.value, indent + 2)
+
+        def _p(label: str, n: Optional[Expr]):
+            print(f"{space} {label}:")
+            if n is None:
+                print(f"{space} None")
+            else:
+                print_expr(n, indent + 2)
+        
+        _p("start", node.start)
+        _p("stop", node.stop)
+        _p("step", node.step)
     else:
         print(f"{space}<Unknown Expr {node}>")
 
