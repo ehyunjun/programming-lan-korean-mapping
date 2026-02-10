@@ -16,6 +16,7 @@ from ast_demo import (
     Bool, NoneLiteral, UnaryOp,
     print_program,
     String, ListLiteral, Index, Attribute,
+    TupleLiteral, SetLiteral, DictLiteral,
     Compare,
 )
 
@@ -196,7 +197,7 @@ class Parser:
         factor ::= NUMBER
                 | 불리언/없음
                 | IDENT / 함수 호출
-                | '(' expr ')' | '[' ... ']'
+                | '(' expr ')' | '[' ... ']' | '{' ... '}' |
         """
         tok_type, tok_value = self.current
 
@@ -231,11 +232,32 @@ class Parser:
             else:
                 node = NoneLiteral()
         
-        # 괄호식: (expr)
+        # 괄호식/튜플: (expr) / (a, b) / (a,) / ()
         elif tok_type == "SYMBOL" and tok_value == "(":
             self.advance() # '(' 소비
-            node = self.parse_expr()
-            self.expect("SYMBOL", ")")
+
+            # 빈 튜플: ()
+            if self.current[0] == "SYMBOL" and self.current[1] == ")":
+                self.advance()
+                node = TupleLiteral(elements=[])
+            else:
+                first = self.parse_expr()
+
+                # 콤마가 있으면 튜플
+                if self.current[0] == "SYMBOL" and self.current[1] == ",":
+                    elements: list[Expr] = [first]
+                    while self.current[0] == "SYMBOL" and self.current[1] == ",":
+                        self.advance() # ',' 소비
+                        # trailing comma 허용: (a,)
+                        if self.current[0] == "SYMBOL" and self.current[1] == ")":
+                            break
+                        elements.append(self.parse_expr())
+                    self.expect("SYMBOL", ")")
+                    node = TupleLiteral(elements=elements)
+                else:
+                    # 콤마가 없으면 그냥 괄호 그룹
+                    self.expect("SYMBOL", ")")
+                    node = first
         
         # 리스트 리터럴: [a, b, c]
         elif tok_type == "SYMBOL" and tok_value == "[":
@@ -252,6 +274,48 @@ class Parser:
 
             self.expect("SYMBOL", "]")
             node = ListLiteral(elements=elements)
+
+        # dict/set 리터럴: {k: v} / {a, b, c}
+        elif tok_type == "SYMBOL" and tok_value == "{":
+            self.advance()
+
+            # 빈 dict: {}
+            if self.current[0] == "SYMBOL" and self.current[1] == "}":
+                self.advance()
+                node = DictLiteral(items=[])
+            else:
+                first = self.parse_expr()
+
+                # dict: {key: value, ...}
+                if self.current[0] == "SYMBOL" and self.current[1] == ":":
+                    items: list[tuple[Expr, Expr]] = []
+                    while True:
+                        self.expect("SYMBOL", ":")
+                        value = self.parse_expr()
+                        items.append((first, value))
+
+                        if self.current[0] == "SYMBOL" and self.current[1] == ",":
+                            self.advance()
+                            # trailing comma 허용
+                            if self.current[0] == "SYMBOL" and self.current[1] == "}":
+                                break
+                            first = self.parse_expr()
+                            continue
+                        break
+
+                    self.expect("SYMBOL", "}")
+                    node = DictLiteral(items=items)
+                else:
+                    # set: {a, b, c}
+                    elements: list[Expr] = [first]
+                    while self.current[0] == "SYMBOL" and self.current[1] == ",":
+                        self.advance()
+                        # trailing comma 허용
+                        if self.current[0] == "SYMBOL" and self.current[1] == "}":
+                            break
+                        elements.append(self.parse_expr())
+                    self.expect("SYMBOL", "}")
+                    node = SetLiteral(elements=elements)
         
         # 이름(변수 또는 함수호출)
         elif tok_type == "IDENT":

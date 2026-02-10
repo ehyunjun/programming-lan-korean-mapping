@@ -10,7 +10,7 @@ from ast_demo import (
     Expr, Stmt, For, FunctionDef, Return, Call, ExprStmt,
     Break, Continue, Pass,
     Bool, NoneLiteral, UnaryOp, String,
-    ListLiteral, Index, Attribute,
+    ListLiteral, TupleLiteral, SetLiteral, DictLiteral, Index, Attribute,
     Compare,
 )
 def gen_expr(node: Expr) -> str:
@@ -39,6 +39,22 @@ def gen_expr(node: Expr) -> str:
     elif isinstance(node, ListLiteral):
         elems = ", ".join(gen_expr(e) for e in node.elements)
         return f"[{elems}]"
+    elif isinstance(node, TupleLiteral):
+        elems = ", ".join(gen_expr(e) for e in node.elements)
+        if len(node.elements) == 0:
+            return "()"
+        if len(node.elements) == 1:
+            return f"({elems},)"
+    elif isinstance(node, SetLiteral):
+        if len(node.elements) == 0:
+            return "set()"
+        elems = ", ".join(gen_expr(e) for e in node.elements)
+        return f"{{{elems}}}"
+    elif isinstance(node, DictLiteral):
+        if not node.items:
+            return "{}"
+        items = ", ".join(f"{gen_expr(k)}: {gen_expr(v)}" for k, v in node.items)
+        return f"{{{items}}}"
     elif isinstance(node, Attribute):
         return f"{gen_expr(node.value)}.{node.attr}"
     elif isinstance(node, Index):

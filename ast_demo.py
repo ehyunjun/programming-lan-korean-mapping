@@ -61,6 +61,18 @@ class ListLiteral(Expr):
     elements: List[Expr]
 
 @dataclass
+class TupleLiteral(Expr):
+    elements: List[Expr]
+
+@dataclass
+class SetLiteral(Expr):
+    elements: List[Expr]
+
+@dataclass
+class DictLiteral(Expr):
+    items: List[tuple[Expr, Expr]]
+
+@dataclass
 class Index(Expr):
     value: Expr
     index: Expr
@@ -173,6 +185,21 @@ def print_expr(node: Expr, indent: int = 0):
         print(f"{space}ListLiteral")
         for e in node.elements:
             print_expr(e, indent + 2)
+    elif isinstance(node, TupleLiteral):
+        print(f"{space}TupleLiteral")
+        for e in node.elements:
+            print_expr(e, indent + 2)
+    elif isinstance(node, SetLiteral):
+        print(f"{space}SetLiteral")
+        for e in node.elements:
+            print_expr(e, indent + 2)
+    elif isinstance(node, DictLiteral):
+        print(f"{space}DictLiteral")
+        for k , v in node.items:
+            print(f"{space} key:")
+            print_expr(k, indent + 4)
+            print(f"{space} value:")
+            print_expr(v, indent + 4)
     elif isinstance(node, Attribute):
         print(f"{space}Attribute(attr={node.attr!r})")
         print(f"{space} value:")
