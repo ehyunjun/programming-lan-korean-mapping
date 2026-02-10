@@ -34,6 +34,13 @@ class Parser:
     # 토큰 하나 소비하면서 앞으로 한 칸 이동
     def advance(self):
         self.pos += 1
+
+    # 현재 위치에서 offset 만큼 앞의 토큰을 미리보기
+    def peek(self, offset: int = 1):
+        idx = self.pos + offset
+        if idx < len(self.tokens):
+            return self.tokens[idx]
+        return ("EOF", "")
     
     # 기대하는 타입/값과 맞는지 검사하면서 토큰 소비
     def expect(self, expected_type=None, expected_value=None):
@@ -124,8 +131,19 @@ class Parser:
         while True:
             ttype, tvalue = self.current
 
+            # 0) "아니다 안에" (not in) - 비교 연산자로 취급
+            if ttype == "KEYWORD" and tvalue == "아니다":
+                nt, nv = self.peek(1)
+                if nt == "KEYWORD" and nv == "안에":
+                    # "아니다", "안에" 소비
+                    self.advance()
+                    self.advance()
+                    op = "not in"
+                else:
+                    break
+
             # 1) "안에" (in)
-            if ttype == "KEYWORD" and tvalue == "안에":
+            elif ttype == "KEYWORD" and tvalue == "안에":
                 self.advance()
                 op = "in"
 
@@ -522,11 +540,6 @@ class Parser:
         value_expr = self.parse_expr()
         return Return(value=value_expr)
     
-    def peek(self, k: int = 1):
-        if self.pos + k < len(self.tokens):
-            return self.tokens[self.pos + k]
-        return ("EOF", "")
-
     def parse_stmt(self) -> Stmt:
         ttype, tvalue = self.current
 
