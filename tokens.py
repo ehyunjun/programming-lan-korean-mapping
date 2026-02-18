@@ -7,10 +7,20 @@ from __future__ import annotations
 SYMBOLS: list[str] = [
     "(", ")", "[", "]", "{", "}",
     ":", ",", ".",
-    "=", "+", "-", "*", "/",
+    "=", "+", "-", "*", "/", "%",
     "<", ">", "!",
+    "&", "|", "^", "~",
 ]
-MULTI_SYMBOLS: list[str] = ["<=", ">=", "==", "!="]
+MULTI_SYMBOLS: list[str] = ["<=", ">=", "==", "!=", "//", "**", "<<", ">>", ":="]
 COMP_OPS: set[str] = {"<", ">", "<=", ">=", "==", "!=", "in"}
 ADD_OPS: set[str] = {"+", "-"}
-MUL_OPS: set[str] = {"*", "/"}
+MUL_OPS: set[str] = {"*", "/", "//", "%"}
+
+SHIFT_OPS: set[str] = {"<<", ">>"}
+BITAND_OP: str = "&"
+BITXOR_OP: str = "^"
+BITOR_OP: str = "|"
+
+POW_OP: str = "**"
+FLOORDIV_OP: str = "//"
+NOD_OP: str = "%"

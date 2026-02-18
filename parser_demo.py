@@ -7,7 +7,7 @@
 
 from codegen_demo import gen_program
 from lexer_demo import simple_lexer, DEF_KEYWORD
-from tokens import ADD_OPS, MUL_OPS, COMP_OPS
+from tokens import ADD_OPS, MUL_OPS, COMP_OPS, SHIFT_OPS, POW_OP, BITAND_OP, BITOR_OP, BITXOR_OP
 from ast_demo import (
     Expr, Stmt, 
     Program, Assign, AugAssign, Name, Number, BinOp, 
@@ -17,7 +17,7 @@ from ast_demo import (
     print_program,
     String, ListLiteral, Index, Slice, Attribute,
     TupleLiteral, SetLiteral, DictLiteral,
-    Compare,
+    Compare, IfExpr, NamedExpr,
 )
 
 class Parser:
@@ -83,12 +83,35 @@ class Parser:
         """
         expr ::= or_expr
         """
-        return self.parse_or()
+        return self.parse_namedexpr()
+    
+    def parse_namedexpr(self) -> Expr:
+        """
+        namedexpr ::= IDENT ':=' conditional_expr | conditional_expr
+        """
+        if self.current[0] == "IDENT" and self.peek(1) == ("SYMBOL", ":="):
+            _, name = self.expect("IDENT")
+            self.expect("SYMBOL", ":=")
+            value = self.parse_conditional()
+            return NamedExpr(target=Name(name), value=value)
+        return self.parse_conditional()
+    
+    def parse_conditional(self) -> Expr:
+        """
+        conditional_expr ::= or_expr ('만약' or_expr '그외' conditional_expr)?
+        (Python의 a if cond else b 를 'a 만약 cond 그외 b'로 지원)
+        """
+        body = self.parse_or()
+        if self.current[0] == "KEYWORD" and self.current[1] == "만약":
+            self.expect("KEYWORD", "만약")
+            test = self.parse_or()
+            self.expect("KEYWORD", "그외")
+            orelse = self.parse_conditional()
+            return IfExpr(body=body, test=test, orelse=orelse)
+        return body
     
     def parse_or(self) -> Expr:
-        """
-        or_expr ::= and_expr ("또는" and_expr)*
-        """
+        """ or_expr ::= and_expr ("또는" and_expr)* """
         left = self.parse_and()
         while self.current[0] == "KEYWORD" and self.current[1] == "또는":
             self.expect("KEYWORD", "또는")
@@ -115,16 +138,14 @@ class Parser:
             self.expect("KEYWORD", "아니다")
             operand = self.parse_not()
             return UnaryOp(op="not", operand=operand)
-        else:
-            return self.parse_comparison()
+        return self.parse_comparison()
 
-    
     def parse_comparison(self) -> Expr:
         """
-        comparison ::= sum ((comp_op | "안에) sum)*
-        비교 연산(<, >, <=, >=, ==, !=, in)은 덧셈/곱셈보다 우선순위가 낮다.
+        comparison ::= bitor ((comp_op | "안에" | "아니다 안에") bitor)*
+        비교 연산(<, >, <=, >=, ==, !=, in)은 비트연산(|,^)보다 우선순위가 낮다.
         """
-        left = self.parse_sum()
+        left = self.parse_bitor()
 
         ops: list[str] = []
         comparators: list[Expr] = []
@@ -155,7 +176,7 @@ class Parser:
             else:
                 break
 
-            right = self.parse_sum()
+            right = self.parse_bitor()
             ops.append(op)
             comparators.append(right)
 
@@ -164,51 +185,105 @@ class Parser:
         
         return Compare(left=left, ops=ops, comparators=comparators)
     
+    def parse_bitor(self) -> Expr:
+        """
+        bitor ::= bitxor ('|' bitxor)*
+        """
+        left = self.parse_bitxor()
+        while self.current == ("SYMBOL", BITOR_OP):
+            self.advance()
+            right = self.parse_bitxor()
+            left = BinOp(left=left, op="|", right=right)
+        return left
+    
+    def parse_bitxor(self) -> Expr:
+        """
+        bitxor ::= bitand ('^' bitand)*
+        """
+        left = self.parse_bitand()
+        while self.current == ("SYMBOL", BITXOR_OP):
+            self.advance()
+            right = self.parse_bitand()
+            left = BinOp(left=left, op="^", right=right)
+        return left
+    
+    def parse_bitand(self) -> Expr:
+        """
+        bitand ::= shift ('&' shift)*
+        """
+        left = self.parse_shift()
+        while self.current == ("SYMBOL", BITAND_OP):
+            self.advance()
+            right = self.parse_shift()
+            left = BinOp(left=left, op="&", right=right)
+        return left
+
+    def parse_shift(self) -> Expr:
+        """
+        shift ::= sum (('<<' | '>>') sum)*
+        """
+        left = self.parse_sum()
+        while self.current[0] == "SYMBOL" and self.current[1] in SHIFT_OPS:
+            op = self.current[1]
+            self.advance()
+            right = self.parse_sum()
+            left = BinOp(left=left, op=op, right=right)
+        return left
+    
     def parse_sum(self) -> Expr:
         """
         sum ::= term (('+' | '-') term)*
         """
         left = self.parse_term()
-
         while self.current[0] == "SYMBOL" and self.current[1] in ADD_OPS:
             op = self.current[1]
             self.advance()
             right = self.parse_term()
             left = BinOp(left=left, op=op, right=right)
-        
         return left
     
     def parse_term(self) -> Expr:
         """
-        term ::= factor (('*' | '/') factor)*
+        term ::= factor (('*' | '/' | '//' | '%') factor)*
         """
         left = self.parse_factor()
-
         while self.current[0] == "SYMBOL" and self.current[1] in MUL_OPS:
             op = self.current[1]
             self.advance()
             right = self.parse_factor()
             left = BinOp(left=left, op=op, right=right)
-        
         return left
     
     def parse_factor(self) -> Expr:
         """
-        factor ::= NUMBER
-                | 불리언/없음
-                | IDENT / 함수 호출
-                | '(' expr ')' | '[' ... ']' | '{' ... '}' |
+        factor ::= ('+' | '-' | '~') factor | power
         """
-        tok_type, tok_value = self.current
-
-        # 단항 + / -
-        if tok_type == "SYMBOL" and tok_value in ("+", "-"):
+        tok_type, tok_value = self.current 
+        if tok_type == "SYMBOL" and tok_value in ("+", "-", "~"):
             self.advance()
             operand = self.parse_factor()
             return UnaryOp(op=tok_value, operand=operand)
-        
+        return self.parse_power()
+    
+    def parse_power(self) -> Expr:
+        """
+        power ::= atom_expr ('**' factor)? (오른쪽 결합)
+        """
+        left = self.parse_atom_expr()
+        if self.current == ("SYMBOL", POW_OP):
+            self.advance()
+            right = self.parse_factor()
+            return BinOp(left=left, op="**", right=right)
+        return left
+    
+    def parse_atom_expr(self) -> Expr:
+        """
+        atom_expr ::= NUMBER | STRING | bool/none | IDENT | '(' expr ')' | list/tuple/set/dict
+                    (postfix: call/index/slice/attr)*
+        """
+        tok_type, tok_value = self.current
         node: Expr
-
+        
         # 숫자
         if tok_type == "NUMBER":
             self.advance()
@@ -457,7 +532,7 @@ class Parser:
         """
         target = self.parse_target()
         _, op_value = self.expect("SYMBOL")
-        if op_value not in ("+", "-", "*", "/"):
+        if op_value not in ("+", "-", "*", "/", "//", "%", "**", "<<", ">>", "&", "^", "|"):
             raise SyntaxError(f"복합대입 연산자는 +, -, *, / 중 하나여야 합니다: {op_value!r}")
         self.expect("SYMBOL", "=")
         value_expr = self.parse_expr()
@@ -700,7 +775,7 @@ class Parser:
                 
                 t1 = self.current
                 t2 = self.peek(1)
-                if t1[0] == "SYMBOL" and t1[1] in ("+", "-", "*", "/") and t2 == ("SYMBOL", "="):
+                if t1[0] == "SYMBOL" and t1[1] in ("+", "-", "*", "/", "//", "%", "**", "<<", ">>", "&", "^", "|") and t2 == ("SYMBOL", "="):
                     self.pos = pos0
                     return self.parse_augassign()
             except SyntaxError:

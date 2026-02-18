@@ -38,6 +38,17 @@ class Compare(Expr):
     comparators: List[Expr]
 
 @dataclass
+class IfExpr(Expr):
+    body: Expr
+    test: Expr
+    orelse: Expr
+
+@dataclass
+class NamedExpr(Expr):
+    target: Name
+    value: Expr
+
+@dataclass
 class Call(Expr):
     func: Expr
     args: List[Expr]
@@ -171,6 +182,20 @@ def print_expr(node: Expr, indent: int = 0):
         print(f"{space} comparators:")
         for c in node.comparators:
             print_expr(c, indent + 2)
+    elif isinstance(node, IfExpr):
+        print(f"{space}IfExpr")
+        print(f"{space} body:")
+        print_expr(node.body, indent + 2)
+        print(f"{space} test:")
+        print_expr(node.test, indent + 2)
+        print(f"{space} orelse:")
+        print_expr(node.orelse, indent + 2)
+    elif isinstance(node, NamedExpr):
+        print(f"{space}NamedExpr")
+        print(f"{space} target:")
+        print_expr(node.target, indent + 2)
+        print(f"{space} value:")
+        print_expr(node.value, indent + 2)
     elif isinstance(node, Call):
         print(f"{space}Call")
         print(f"{space} func:")

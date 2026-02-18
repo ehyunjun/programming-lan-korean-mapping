@@ -6,7 +6,7 @@
 from mapping import BUILTIN_HAN_TO_PY
 
 from ast_demo import (
-    Program, Assign, AugAssign, If, While, Name, Number, BinOp,
+    Program, Assign, AugAssign, If, While, Name, Number, BinOp, IfExpr, NamedExpr,
     Expr, Stmt, For, FunctionDef, Return, Call, ExprStmt,
     Break, Continue, Pass,
     Bool, NoneLiteral, UnaryOp, String,
@@ -29,6 +29,10 @@ def gen_expr(node: Expr) -> str:
             parts.append(op)
             parts.append(gen_expr(cmp_))
         return f"({' '.join(parts)})"
+    elif isinstance(node, IfExpr):
+        return f"({gen_expr(node.body)} if {gen_expr(node.test)} else {gen_expr(node.orelse)})"
+    elif isinstance(node, NamedExpr):
+        return f"({gen_expr(node.target)} := {gen_expr(node.value)})"
     elif isinstance(node, Call):
         if isinstance(node.func, Name):
             func_code = BUILTIN_HAN_TO_PY.get(node.func.id, node.func.id)
@@ -45,6 +49,7 @@ def gen_expr(node: Expr) -> str:
             return "()"
         if len(node.elements) == 1:
             return f"({elems},)"
+        return f"({elems})"
     elif isinstance(node, SetLiteral):
         if len(node.elements) == 0:
             return "set()"
