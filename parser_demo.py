@@ -734,7 +734,7 @@ class Parser:
         if isinstance(left, TupleLiteral):
             value_expr = self.parse_expr_list()
             if self.current == ("SYMBOL", "="):
-                raise SyntaxError("언패킹 대입꺼내기는 연쇄 대입(a=b=...)을 지원하지 않습니다.")
+                raise SyntaxError("언패킹 대입에서는 연쇄 대입(a=b=...)을 지원하지 않습니다.")
             return Assign(target=left, value=value_expr)
         
         # 연쇄 대입: a = b = c
@@ -847,9 +847,8 @@ class Parser:
         # '반복' 키워드 소비
         self.expect("KEYWORD", "반복")
 
-        # 반복 변수 이름
-        _, ident_value = self.expect("IDENT")
-        target = Name(ident_value)
+        # 반복 변수 / 타겟 (언패킹 지원)
+        target = self.parse_target_list()
 
         # in -> 안에
         self.expect("KEYWORD", "안에")
@@ -950,7 +949,7 @@ class Parser:
             pos0 = self.pos
 
             try:
-                _ = self.parse_target()
+                _ = self.parse_target_list()
                 if self.current == ("SYMBOL", "="):
                     self.pos = pos0
                     return self.parse_assign()
