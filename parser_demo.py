@@ -3,21 +3,22 @@
 # "값 = 1 + 2" 같은 코드를
 # 1) simple_lexer 로 토큰 리스트로 만들고
 # 2) Parser 로 AST 트리로 바꿔보는 데모
-# + if/while/for/def 에서 파이썬 처럼 블록(들여쓰기) 지원
+# + if/while/for/def 꺼내기 파이썬 처럼 블록(들여쓰기) 지원
 
 from codegen_demo import gen_program
 from lexer_demo import simple_lexer, DEF_KEYWORD
 from tokens import ADD_OPS, MUL_OPS, COMP_OPS, SHIFT_OPS, POW_OP, BITAND_OP, BITOR_OP, BITXOR_OP
 from ast_demo import (
     Expr, Stmt, 
-    Program, Assign, AugAssign, Name, Number, BinOp, 
+    Program, Assign, ChainedAssign, AugAssign, Name, Number, BinOp, 
     If, While, For, FunctionDef, Return, Call, ExprStmt,
     Break, Continue, Pass,
     Bool, NoneLiteral, UnaryOp,
     print_program,
     String, ListLiteral, Index, Slice, Attribute,
     TupleLiteral, SetLiteral, DictLiteral,
-    Compare, IfExpr, NamedExpr,
+    Compare, IfExpr, NamedExpr, 
+    Param, Import, FromImport,
 )
 
 class Parser:
@@ -36,7 +37,7 @@ class Parser:
     def advance(self):
         self.pos += 1
 
-    # 현재 위치에서 offset 만큼 앞의 토큰을 미리보기
+    # 현재 위치꺼내기 offset 만큼 앞의 토큰을 미리보기
     def peek(self, offset: int = 1):
         idx = self.pos + offset
         if idx < len(self.tokens):
@@ -457,15 +458,29 @@ class Parser:
             if self.current[0] == "SYMBOL" and self.current[1] == "(":
                 self.advance()
                 args: list[Expr] = []
+                keywords: list[tuple[str, Expr]] = []
+                seen_kw = False
                 if not (self.current[0] == "SYMBOL" and self.current[1] == ")"):
                     while True:
-                        args.append(self.parse_expr())
+                        if self.current[0] == "IDENT" and self.peek(1) == ("SYMBOL", "="):
+                            seen_kw = True
+                            _, key = self.expect("IDENT")
+                            self.expect("SYMBOL", "=")
+                            val = self.parse_expr()
+                            keywords.append((key, val))
+                        else:
+                            if seen_kw:
+                                raise SyntaxError("키워드 인자 뒤에는 위치 인자를 둘 수 없습니다.")
+                            args.append(self.parse_expr())
+                        
                         if self.current[0] == "SYMBOL" and self.current[1] == ",":
                             self.advance()
+                            if self.current[0] == "SYMBOL" and self.current[1] == ")":
+                                break
                             continue
                         break
                 self.expect("SYMBOL", ")")
-                node = Call(func=node, args=args)
+                node = Call(func=node, args=args, keywords=keywords)
                 continue
             break
         return node
@@ -537,10 +552,136 @@ class Parser:
         self.expect("SYMBOL", "=")
         value_expr = self.parse_expr()
         return AugAssign(target=target, op=op_value, value=value_expr)
-    
+
     # =====================
     #  블록(suite) 파싱
     # =====================
+    
+    def parse_target_list(self) -> Expr:
+        """
+        target_list ::= target (',' target)* [',']
+        - a, b 같은 언패킹 타겟 지원
+        - 1개면 그대로 반환, 2개 이상이면 TupleLiteral
+        """
+        first = self.parse_target()
+        if self.current != ("SYMBOL", ','):
+            return first
+        
+        elements: list[Expr] = [first]
+        while self.current == ("SYMBOL", ","):
+            self.advance()
+
+            if self.current[0] in ("NEWLINE", "DEDENT", "EOF"):
+                break
+            if self.current == ("KEYWORD", "안에"):
+                break
+
+            elements.append(self.parse_target())
+
+        return TupleLiteral(elements=elements)
+
+    def parse_expr_list(self, stop_symbols: set[str] | None = None) -> Expr:
+        """
+        expr_list ::= expr(',' expr)* [',']
+        - RHS 튜플(1,2) / 반환 a,b 등을 TupleLiteral로
+        """
+        if stop_symbols is None:
+            stop_symbols = set()
+
+        first = self.parse_expr()
+        if self.current != ("SYMBOL", ","):
+            return first
+        
+        elements: list[Expr] = [first]
+        while self.current == ("SYMBOL", ","):
+            self.advance()
+
+            if self.current[0] in ("NEWLINE", "DEDENT", "EOF"):
+                break
+            if self.current[0] == "SYMBOL" and self.current[1] in stop_symbols:
+                break
+
+            elements.append(self.parse_expr())
+
+        return TupleLiteral(elements=elements)
+
+    def parse_dotted_name(self) -> str:
+        """
+        dotted_name ::= IDENT ('.' IDENT)*
+        예: math / os.path / a.b.c
+        """
+        if self.current[0] != "IDENT":
+            raise SyntaxError(f"모듈/이름은 IDENT로 시작해야 합니다: {self.current}")
+        _, first = self.expect("IDENT")
+        parts = [first]
+        while self.current == ("SYMBOL", "."):
+            self.advance()
+            _, name = self.expect("IDENT")
+            parts.append(name)
+        return ".".join(parts)
+    
+    def parse_import(self) -> Import:
+        """
+        불러오기 module [별칭 alias] (',' module [별칭 alias])*
+        예: 불러오기 math
+            불러오기 os.path 별칭 경로
+        """
+        self.expect("KEYWORD", "불러오기")
+        names: list[tuple[str, str | None]] =[]
+
+        while True:
+            module = self.parse_dotted_name()
+            asname: str | None = None
+
+            if self.current == ("KEYWORD", "별칭"):
+                self.advance()
+                _, asname = self.expect("IDENT")
+
+            names.append((module, asname))
+
+            if self.current == ("SYMBOL", ","):
+                self.advance()
+                continue
+            break
+
+        return Import(names=names)
+    
+    def parse_from_import(self) -> FromImport:
+        """
+        꺼내기 module 불러오기 name [별칭 alias] (',' name [별칭 alias])*
+        예: 꺼내기 math 불러오기 sqrt
+            꺼내기 math 불러오기 sqrt 별칭 루트
+            꺼내기 math 불러오기 *
+        """
+        self.expect("KEYWORD", "꺼내기")
+        module = self.parse_dotted_name()
+        self.expect("KEYWORD", "불러오기")
+
+        names: list[tuple[str, str | None]] = []
+
+        if self.current == ("SYMBOL", "*"):
+            self.advance()
+            names.append(("*", None))
+            return FromImport(module=module, names=names)
+        
+        while True:
+            if self.current[0] != "IDENT":
+                raise SyntaxError(f"불러오기 뒤에는 IDENT 또는 * 가 와야 합니다: {self.current}")
+            _, name = self.expect("IDENT")
+
+            asname: str | None = None
+            if self.current == ("KEYWORD", "별칭"):
+                self.advance()
+                _, asname = self.expect("IDENT")
+
+            names.append((name, asname))
+
+            if self.current == ("SYMBOL", ","):
+                self.advance()
+                continue
+            break
+
+        return FromImport(module=module, names=names)
     
     def parse_suite(self) -> list[Stmt]:
         """
@@ -581,13 +722,41 @@ class Parser:
     
     def parse_assign(self) -> Assign:
         """
-        대입문: IDENT '=' expr
-        예:     값     = 1 + 2
+        대입문:
+        - 단일: a = expr
+        - 언패킹 : a, b = expr, expr
+        - 연쇄: a = b = expr
         """
-        target = self.parse_target()
+        left = self.parse_target_list()
         self.expect("SYMBOL", "=")
-        value_expr = self.parse_expr()
-        return Assign(target=target, value=value_expr)
+
+        # 언패킹 대입: 왼쪽이 튜플이면 연쇄 대입 금지
+        if isinstance(left, TupleLiteral):
+            value_expr = self.parse_expr_list()
+            if self.current == ("SYMBOL", "="):
+                raise SyntaxError("언패킹 대입꺼내기는 연쇄 대입(a=b=...)을 지원하지 않습니다.")
+            return Assign(target=left, value=value_expr)
+        
+        # 연쇄 대입: a = b = c
+        targets: list[Expr] = [left]
+        while True:
+            save = self.pos
+            try:
+                nxt = self.parse_target()
+                if self.current == ("SYMBOL", "="):
+                    targets.append(nxt)
+                    self.advance()
+                    continue
+                self.pos = save
+                break
+            except SyntaxError:
+                self.pos = save
+                break
+
+        value_expr = self.parse_expr_list()
+        if len(targets) == 1:
+            return Assign(target=targets[0], value=value_expr)
+        return ChainedAssign(targets=targets, value=value_expr)
 
     def parse_if(self) -> If:
         """
@@ -715,10 +884,16 @@ class Parser:
         if not (self.current[0] == "SYMBOL" and self.current[1] == ")"):
             while True:
                 _, param_name = self.expect("IDENT")
-                params.append(param_name)
+                default_val: Expr | None = None
+                if self.current == ("SYMBOL", "="):
+                    self.advance()
+                    default_val = self.parse_expr()
+                params.append(Param(name=param_name, default=default_val))
 
                 if self.current[0] == "SYMBOL" and self.current[1] == ",":
                     self.advance()
+                    if self.current[0] == "SYMBOL" and self.current[1] == ")":
+                        break
                     continue
                 break
         # ')'
@@ -735,11 +910,14 @@ class Parser:
     def parse_return(self) -> Return:
         """
         반환문:
+            반환
             반환 expr
-        지금은 항상 값이 있는 형태만 지원(반환 alone은 나중에 확장)
+            반환 a, b   (튜플 반환)
         """
         self.expect("KEYWORD", "반환")
-        value_expr = self.parse_expr()
+        if self.current[0] in ("NEWLINE", "DEDENT", "EOF"):
+            return Return(value=None)
+        value_expr = self.parse_expr_list()
         return Return(value=value_expr)
     
     def parse_stmt(self) -> Stmt:
@@ -764,6 +942,10 @@ class Parser:
         elif ttype == "KEYWORD" and tvalue == "통과":
             self.expect("KEYWORD", "통과")
             return Pass()
+        elif ttype == "KEYWORD" and tvalue == "불러오기":
+            return self.parse_import()
+        elif ttype == "KEYWORD" and tvalue == "꺼내기":
+            return self.parse_from_import()
         elif ttype == "IDENT":
             pos0 = self.pos
 

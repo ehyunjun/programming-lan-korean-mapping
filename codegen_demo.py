@@ -6,12 +6,12 @@
 from mapping import BUILTIN_HAN_TO_PY
 
 from ast_demo import (
-    Program, Assign, AugAssign, If, While, Name, Number, BinOp, IfExpr, NamedExpr,
+    Program, Assign, ChainedAssign, AugAssign, If, While, Name, Number, BinOp, IfExpr, NamedExpr,
     Expr, Stmt, For, FunctionDef, Return, Call, ExprStmt,
     Break, Continue, Pass,
     Bool, NoneLiteral, UnaryOp, String,
     ListLiteral, TupleLiteral, SetLiteral, DictLiteral, Index, Slice, Attribute,
-    Compare,
+    Compare, Param, Import, FromImport,
 )
 def gen_expr(node: Expr) -> str:
     """ 표현식(Expr) -> 파이썬 코드 문자열 """
@@ -38,7 +38,11 @@ def gen_expr(node: Expr) -> str:
             func_code = BUILTIN_HAN_TO_PY.get(node.func.id, node.func.id)
         else:
             func_code = gen_expr(node.func)
-        args_code = ", ".join(gen_expr(a) for a in node.args)
+        parts: list[str] = []
+        parts.extend(gen_expr(a) for a in node.args)
+        if node.keywords:
+            parts.extend(f"{k}={gen_expr(v)}" for k, v in node.keywords)
+        args_code = ", ".join(parts)
         return f"{func_code}({args_code})"
     elif isinstance(node, ListLiteral):
         elems = ", ".join(gen_expr(e) for e in node.elements)
@@ -99,6 +103,10 @@ def gen_stmt(node: Stmt) -> str:
         value_code = gen_expr(node.value)
         return f"{target_code} = {value_code}"
     
+    if isinstance(node, ChainedAssign):
+        parts = [gen_expr(t) for t in node.targets]
+        return f"{' = '.join(parts)} = {gen_expr(node.value)}"
+    
     # 1.5) AugAssign (+=, -=, *=, /=)
     elif isinstance(node, AugAssign):
         target_code = gen_expr(node.target)
@@ -143,7 +151,7 @@ def gen_stmt(node: Stmt) -> str:
 
     # 4) for 문
     elif isinstance(node, For):
-        target = node.target.id
+        target = gen_expr(node.target)
         iter_code = gen_expr(node.iter)
         lines = [f"for {target} in {iter_code}:"]
         for stmt in node.body:
@@ -169,7 +177,15 @@ def gen_stmt(node: Stmt) -> str:
     
     # 6) functionderf
     elif isinstance(node, FunctionDef):
-        params = ", ".join(node.args)
+        parts: list[str] = []
+        for p in node.args:
+            if not isinstance(p, Param):
+                raise TypeError(...)
+            if p.default is None:
+                parts.append(p.name)
+            else:
+                parts.append(f"{p.name}={gen_expr(p.default)}")
+        params = ", ".join(parts)
         lines = [f"def {node.name}({params}):"]
         if not node.body:
             lines.append("    pass")
@@ -180,6 +196,27 @@ def gen_stmt(node: Stmt) -> str:
                     lines.append("    " + line)
 
         return "\n".join(lines)
+    elif isinstance(node, Import):
+        items: list[str] = []
+        for module, asname in node.names:
+            if asname:
+                items.append(f"{module} as {asname}")
+            else:
+                items.append(module)
+        return f"import {', '.join(items)}"
+    elif isinstance(node, FromImport):
+        items: list[str] = []
+        for name, asname in node.names:
+            if name == "*":
+                if asname:
+                    raise SyntaxError("from ... import * 는 별칭(as)을 붙일 수 없습니다.")
+                items.append("*")
+            else:
+                if asname:
+                    items.append(f"{name} as {asname}")
+                else:
+                    items.append(name)
+        return f"from {node.module} import {', '.join(items)}"
     else:
         raise TypeError(f"지원하지 않는 Stmt 타입: {node!r}")
     

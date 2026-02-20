@@ -52,6 +52,7 @@ class NamedExpr(Expr):
 class Call(Expr):
     func: Expr
     args: List[Expr]
+    keywords: List[tuple[str, Expr]] | None = None
 
 @dataclass
 class Bool(Expr):
@@ -109,6 +110,11 @@ class Assign(Stmt):
     value: Expr   # 오른쪽: 값(표현식)
 
 @dataclass
+class ChainedAssign(Stmt):
+    targets: List[Expr]
+    value: Expr
+
+@dataclass
 class AugAssign(Stmt):
     target: Expr
     op: str      # "+", "-", "*", "/"
@@ -135,7 +141,7 @@ class While(Stmt):
 
 @dataclass
 class For(Stmt):
-    target: Name
+    target: Expr
     iter: Expr
     body: List[Stmt]
 
@@ -158,8 +164,22 @@ class Pass(Stmt):
 @dataclass
 class FunctionDef(Stmt):
     name: str
-    args: List[str]
+    args: List["Param"]
     body: List[Stmt]
+
+@dataclass
+class Param:
+    name: str
+    default: Expr | None = None
+
+@dataclass
+class Import(Stmt):
+    names: List[tuple[str, str | None]]
+
+@dataclass
+class FromImport(Stmt):
+    module: str
+    names: List[tuple[str, str | None]]
 
 # AST를 예쁘게 출력하는 함수들
 
@@ -203,6 +223,11 @@ def print_expr(node: Expr, indent: int = 0):
         print(f"{space} args:")
         for a in node.args:
             print_expr(a, indent + 2)
+        if node.keywords:
+            print(f"{space} keywords:")
+            for k, v in node.keywords:
+                print(f"{space}  {k}=")
+                print_expr(v, indent + 4)
     elif isinstance(node, String):
         print(f"{space}String(value={node.value!r})")
     elif isinstance(node, Bool):
@@ -265,7 +290,15 @@ def print_stmt(node: Stmt, indent: int = 0):
     if isinstance(node, Assign):
         print(f"{space}Assign")
         print(f"{space} target:")
-        print_expr(node.target, indent + 2)
+        for t in node.target:
+            print_expr(t, indent + 2)
+        print(f"{space} value:")
+        print_expr(node.value, indent + 2)
+    elif isinstance(node, ChainedAssign):
+        print(f"{space}ChainedAssign")
+        print(f"{space} targets:")
+        for t in node.targets:
+            print_expr(t, indent + 2)
         print(f"{space} value:")
         print_expr(node.value, indent + 2)
     elif isinstance(node, ExprStmt):
@@ -314,13 +347,22 @@ def print_stmt(node: Stmt, indent: int = 0):
     elif isinstance(node, Return):
         print(f"{space}Return")
         if node.value is not None:
-            print(f"{space} value:")
             print_expr(node.value, indent + 2)
     elif isinstance(node, FunctionDef):
-        print(f"{space}FunctionDef(name={node.name!r}, args={node.args})")
+        args = []
+        for p in node.args:
+            if p.default is None:
+                args.append(p.name)
+            else:
+                args.append(f"{p.name}=...")
+        print(f"{space}FunctionDef(name={node.name!r}, args={args})")
         print(f"{space} body:")
         for s in node.body:
             print_stmt(s, indent + 2)
+    elif isinstance(node, Import):
+        print(f"{space}Import(names={node.names})")
+    elif isinstance(node, FromImport):
+        print(f"{space}FromImport(module={node.module!r}, names={node.names})")
     else:
         print(f"{space}<Unknown Stmt {node!r}>")
 

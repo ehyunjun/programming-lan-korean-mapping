@@ -28,6 +28,11 @@ PY_TO_HAN = {
     "break": "중단",
     "continue": "계속",
     "pass": "통과",
+
+    # modules
+    "import": "불러오기",
+    "from": "꺼내기",
+    "as": "별칭"
 }
 
 # "출력"은 키워드가 아니라 내장함수(print) 맵핑이지만,
