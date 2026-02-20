@@ -32,7 +32,13 @@ PY_TO_HAN = {
     # modules
     "import": "불러오기",
     "from": "꺼내기",
-    "as": "별칭"
+    "as": "별칭",
+
+    # exceptions
+    "try": "시도",
+    "except": "예외",
+    "finally": "마침",
+    "raise": "던지기",
 }
 
 # "출력"은 키워드가 아니라 내장함수(print) 맵핑이지만,
@@ -56,6 +62,10 @@ BUILTIN_HAN_TO_PY = build_reverse_map(BUILTIN_PY_TO_HAN)
 
 # lexer에서키워드 판정에 쓸 한글 키워드 집합
 HAN_KEYWORDS = set(PY_TO_HAN.values())
+
+# try/except의 else는 파이썬 키워드(else)와 1:1 매핑이 아니라 문맥 의존이라,
+# 한글 소스에서는 별도 키워드(성공)를 허용한다.
+HAN_KEYWORDS.add("성공")
 
 # 자주 쓰는 편의 상수 (기존 코드 호완용)
 KW_DEF = PY_TO_HAN["def"]

@@ -1,1 +1,4 @@
-출력("a#b")
+시도:
+    던지기 ValueError("x")
+예외 ValueError:
+    출력("caught")

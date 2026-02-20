@@ -19,6 +19,7 @@ from ast_demo import (
     TupleLiteral, SetLiteral, DictLiteral,
     Compare, IfExpr, NamedExpr, 
     Param, Import, FromImport,
+    Try, ExceptHandler, Raise,
 )
 
 class Parser:
@@ -919,6 +920,72 @@ class Parser:
         value_expr = self.parse_expr_list()
         return Return(value=value_expr)
     
+    def parse_raise(self) -> Raise:
+        """
+        던지기 문:
+            던지기
+            던지기 expr
+        """
+        self.expect("KEYWORD", "던지기")
+        if self.current[0] in ("NEWLINE", "DEDENT", "EOF"):
+            return Raise(exc=None)
+        exc = self.parse_expr()
+        return Raise(exc=exc)
+    
+    def parse_try(self) -> Try:
+        """
+        예외 처리:
+            시도: suite
+            예외 [TypeExpr] [별칭 name]: suite
+            성공: suite
+            마침: suite
+        """
+        self.expect("KEYWORD", "시도")
+        self.expect("SYMBOL", ":")
+        body = self.parse_suite()
+
+        handlers: list[ExceptHandler] = []
+        orelse: list[Stmt] | None = None
+        finalbody: list[Stmt] | None = None
+
+        # except handlers (0개 이상)
+        while self.current == ("KEYWORD", "예외"):
+            self.advance()
+
+            exc_type: Expr | None = None
+            exc_name: str | None = None
+
+            # 예외 뒤에 ':'가 바로 오면 catch-all
+            if self.current != ("SYMBOL", ":"):
+                exc_type = self.parse_expr()
+
+            if self.current == ("KEYWORD", "별칭"):
+                self.advance()
+                if exc_type is None:
+                    raise SyntaxError("'예외 별칭 e' 형태는 지원하지 않습니다. (타입 없이 별칭 불가)")
+                _, exc_name = self.expect("IDENT")
+
+            self.expect("SYMBOL", ":")
+            h_body = self.parse_suite()
+            handlers.append(ExceptHandler(type=exc_type, name=exc_name, body=h_body))
+
+        # try-else
+        if self.current == ("KEYWORD", "성공"):
+            self.advance()
+            self.expect("SYMBOL", ":")
+            orelse = self.parse_suite()
+
+        # finally
+        if self.current == ("KEYWORD", "마침"):
+            self.advance()
+            self.expect("SYMBOL", ":")
+            finalbody = self.parse_suite()
+
+        if not handlers and finalbody is None:
+            raise SyntaxError("시도 문에는 최소 1개의 예외 블록 또는 마침 블록이 필요합니다.")
+        
+        return Try(body=body, handlers=handlers, orelse=orelse, finalbody=finalbody)
+
     def parse_stmt(self) -> Stmt:
         ttype, tvalue = self.current
 
@@ -945,6 +1012,10 @@ class Parser:
             return self.parse_import()
         elif ttype == "KEYWORD" and tvalue == "꺼내기":
             return self.parse_from_import()
+        elif ttype == "KEYWORD" and tvalue == "시도":
+            return self.parse_try()
+        elif ttype == "KEYWORD" and tvalue == "던지기":
+            return self.parse_raise()
         elif ttype == "IDENT":
             pos0 = self.pos
 

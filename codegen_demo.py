@@ -12,6 +12,7 @@ from ast_demo import (
     Bool, NoneLiteral, UnaryOp, String,
     ListLiteral, TupleLiteral, SetLiteral, DictLiteral, Index, Slice, Attribute,
     Compare, Param, Import, FromImport,
+    Try, ExceptHandler, Raise,
 )
 def gen_expr(node: Expr) -> str:
     """ 표현식(Expr) -> 파이썬 코드 문자열 """
@@ -217,6 +218,61 @@ def gen_stmt(node: Stmt) -> str:
                 else:
                     items.append(name)
         return f"from {node.module} import {', '.join(items)}"
+    elif isinstance(node, Raise):
+        if node.exc is None:
+            return "raise"
+        return f"raise {gen_expr(node.exc)}"
+    elif isinstance(node, Try):
+        lines: list[str] = ["try:"]
+        if not node.body:
+            lines.append("    pass")
+        else:
+            for stmt in node.body:
+                body_code = gen_stmt(stmt)
+                for line in body_code.splitlines():
+                    lines.append("    " + line)
+
+        for h in node.handlers:
+            if not isinstance(h, ExceptHandler):
+                raise TypeError(f"Try.handlers에는 ExceptHandler만 들어갈 수 있습니다: {h!r}")
+            head = "except"
+            if h.type is not None:
+                head += f" {gen_expr(h.type)}"
+            if h.name is not None:
+                if h.type is None:
+                    raise SyntaxError("'예외 별칭 e' 형태는 지원하지 않습니다. (타입 없이 별칭 불가)")
+                head += f" as {h.name}"
+            head += ":"
+            lines.append(head)
+            if not h.body:
+                lines.append("    pass")
+            else:
+                for stmt in h.body:
+                    body_code = gen_stmt(stmt)
+                    for line in body_code.splitlines():
+                        lines.append("    " + line)
+
+        if node.orelse is not None:
+            lines.append("else:")
+            if not node.orelse:
+                lines.append("    pass")
+            else:
+                for stmt in node.orelse:
+                    body_code = gen_stmt(stmt)
+                    for line in body_code.splitlines():
+                        lines.append("    " + line)
+
+        if node.finalbody is not None:
+            lines.append("finally:")
+            if not node.finalbody:
+                lines.append("    pass")
+            else:
+                for stmt in node.finalbody:
+                    body_code = gen_stmt(stmt)
+                    for line in body_code.splitlines():
+                        lines.append("    " + line)
+            
+        return "\n".join(lines)
     else:
         raise TypeError(f"지원하지 않는 Stmt 타입: {node!r}")
     

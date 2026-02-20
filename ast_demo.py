@@ -181,6 +181,27 @@ class FromImport(Stmt):
     module: str
     names: List[tuple[str, str | None]]
 
+# ======================
+# Exceptions
+# ======================
+
+@dataclass
+class ExceptHandler:
+    type: Expr | None
+    name: str | None
+    body: List[Stmt]
+
+@dataclass
+class Try(Stmt):
+    body: List[Stmt]
+    handlers: List[ExceptHandler]
+    orelse: List[Stmt] | None = None
+    finalbody: List[Stmt] | None = None
+
+@dataclass
+class Raise(Stmt):
+    exc: Expr | None = None
+
 # AST를 예쁘게 출력하는 함수들
 
 def print_expr(node: Expr, indent: int = 0):
@@ -362,6 +383,33 @@ def print_stmt(node: Stmt, indent: int = 0):
         print(f"{space}Import(names={node.names})")
     elif isinstance(node, FromImport):
         print(f"{space}FromImport(module={node.module!r}, names={node.names})")
+    elif isinstance(node, Raise):
+        print(f"{space}Raise")
+        if node.exc is not None:
+            print_expr(node.exc, indent + 2)
+    elif isinstance(node, Try):
+        print(f"{space}Try")
+        print(f"{space} body:")
+        for s in node.body:
+            print_stmt(s, indent + 2)
+        print(f"{space} handlers:")
+        for h in node.handlers:
+            h_type = None if h.type is None else type(h.type).__name__
+            print(f"{space}  ExceptHandler(type={h_type}, name={h.name!r})")
+            if h.type is not None:
+                print(f"{space}   type_expr:")
+                print_expr(h.type, indent + 4)
+            print(f"{space}   body:")
+            for s in h.body:
+                print_stmt(s, indent + 4)
+        if node.orelse:
+            print(f"{space} orelse:")
+            for s in node.orelse:
+                print_stmt(s, indent + 2)
+        if node.finalbody:
+            print(f"{space} finalbody:")
+            for s in node.finalbody:
+                print_stmt(s, indent + 2)
     else:
         print(f"{space}<Unknown Stmt {node!r}>")
 

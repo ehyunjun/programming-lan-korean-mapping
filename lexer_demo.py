@@ -31,7 +31,7 @@ def simple_lexer(text: str):
             if quote is not None:
                 out.append(ch)
                 if escaped:
-                    excaped = False
+                    escaped = False
                     continue
                 if ch == "\\":
                     escaped = True
