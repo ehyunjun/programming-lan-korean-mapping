@@ -180,7 +180,7 @@ def gen_stmt(node: Stmt) -> str:
         parts: list[str] = []
         for p in node.args:
             if not isinstance(p, Param):
-                raise TypeError(...)
+                raise TypeError(f"FunctionDef.args에는 Param만 들어갈 수 있습니다: {p!r}")
             if p.default is None:
                 parts.append(p.name)
             else:

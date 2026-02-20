@@ -22,6 +22,33 @@ def simple_lexer(text: str):
     tokens = []
     indent_stack =[0] # 들여쓰기 레벨 스택
 
+    def _strip_comment_preserving_strings(code: str) -> str:
+        """문자열 밖의 #부터는 주석으로 취급해 잘라낸다."""
+        out: list[str] = []
+        quote: str | None = None
+        escaped = False
+        for ch in code:
+            if quote is not None:
+                out.append(ch)
+                if escaped:
+                    excaped = False
+                    continue
+                if ch == "\\":
+                    escaped = True
+                    continue
+                if ch == quote:
+                    quote = None
+                continue
+            else:
+                if ch in ('"', "'"):
+                    out.append(ch)
+                    quote = ch
+                    continue
+                if ch == "#":
+                    break
+                out.append(ch)
+        return "".join(out)
+
     lines = text.splitlines()
 
     for raw_line in lines:
@@ -31,7 +58,8 @@ def simple_lexer(text: str):
         # 완전 빈 줄이면 스킵 (브록 구조에 영향 주지 않게)
         if line.strip() =="":
             continue
-        # 1) 선행 공백 개수 세기 (스페이스/탭 지원)
+
+        # 선행 공백 개수 세기 (스페이스/탭 지원)
         indent = 0
         i = 0
         while i < len(line) and line[i] in (" ", "\t"):
@@ -40,8 +68,16 @@ def simple_lexer(text: str):
             else:  # '\t'
                 indent +=4
             i += 1
-        
-        # 2) 이전 줄과 들여쓰기 비교해서 INDENT / DEDENT 토큰 생성
+
+        # 실제 코드 부분(선행 공백 제거된 부분)
+        code = line[i:]
+        code = _strip_comment_preserving_strings(code)
+
+        # 주석/공백만 남으면(= 논리적으로 빈 줄) 들여쓰기/토큰에 영향 주지 않게 스킵
+        if code.strip() == "":
+            continue
+
+        # 이전 줄과 들여쓰기 비교해서 INDENT / DEDENT 토큰 생성
         if indent > indent_stack[-1]:
             indent_stack.append(indent)
             tokens.append(("INDENT", ""))
@@ -52,13 +88,6 @@ def simple_lexer(text: str):
                 tokens.append(("DEDENT", ""))
             if indent != indent_stack[-1]:
                 raise IndentationError("들여쓰기가 일관되지 않습니다.")
-            
-        # 3) 실제 코드 부분(선행 공백 제거된 부분)을 토큰화
-        code = line[i:]
-
-        hash_pos = code.find("#")
-        if hash_pos != -1:
-            code = code[:hash_pos]
 
         j = 0
         while j < len(code):

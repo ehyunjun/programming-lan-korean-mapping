@@ -548,7 +548,7 @@ class Parser:
         target = self.parse_target()
         _, op_value = self.expect("SYMBOL")
         if op_value not in ("+", "-", "*", "/", "//", "%", "**", "<<", ">>", "&", "^", "|"):
-            raise SyntaxError(f"복합대입 연산자는 +, -, *, / 중 하나여야 합니다: {op_value!r}")
+            raise SyntaxError(f"복합대입 연산자가 올바르지 않습니다: {op_value!r}")
         self.expect("SYMBOL", "=")
         value_expr = self.parse_expr()
         return AugAssign(target=target, op=op_value, value=value_expr)
@@ -879,7 +879,7 @@ class Parser:
         self.expect("SYMBOL", "(")
 
         # 파라미터 리스트
-        params: list[str] = []
+        params: list[Param] = []
         if not (self.current[0] == "SYMBOL" and self.current[1] == ")"):
             while True:
                 _, param_name = self.expect("IDENT")
@@ -965,7 +965,9 @@ class Parser:
             self.pos = pos0
             expr = self.parse_expr()
             return ExprStmt(value=expr)
-        
+
+        raise SyntaxError(f"지원하지 않는 문장 시작 토큰: {self.current}")
+
 if __name__ == "__main__":
     # 1) 한글 코드
     code = f"""{DEF_KEYWORD} 더하기(x, y):

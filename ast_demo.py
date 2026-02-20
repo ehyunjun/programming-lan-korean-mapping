@@ -290,8 +290,7 @@ def print_stmt(node: Stmt, indent: int = 0):
     if isinstance(node, Assign):
         print(f"{space}Assign")
         print(f"{space} target:")
-        for t in node.target:
-            print_expr(t, indent + 2)
+        print_expr(node.target, indent + 2)
         print(f"{space} value:")
         print_expr(node.value, indent + 2)
     elif isinstance(node, ChainedAssign):
