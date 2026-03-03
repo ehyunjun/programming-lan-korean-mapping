@@ -168,6 +168,12 @@ class FunctionDef(Stmt):
     body: List[Stmt]
 
 @dataclass
+class ClassDef(Stmt):
+    name: str
+    bases: List[Expr]
+    body: List[Stmt]
+
+@dataclass
 class Param:
     name: str
     default: Expr | None = None
@@ -376,6 +382,14 @@ def print_stmt(node: Stmt, indent: int = 0):
             else:
                 args.append(f"{p.name}=...")
         print(f"{space}FunctionDef(name={node.name!r}, args={args})")
+        print(f"{space} body:")
+        for s in node.body:
+            print_stmt(s, indent + 2)
+    elif isinstance(node, ClassDef):
+        bases = []
+        for b in node.bases:
+            bases.append(type(b).__name__)
+        print(f"{space}ClassDef(name={node.name!r}, bases={bases})")
         print(f"{space} body:")
         for s in node.body:
             print_stmt(s, indent + 2)

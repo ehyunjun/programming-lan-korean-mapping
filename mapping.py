@@ -13,6 +13,9 @@ PY_TO_HAN = {
     "while": "동안",
     "for": "반복",
 
+    # opp
+    "class": "클래스",
+
     # logical
     "and": "그리고",
     "or": "또는",
@@ -59,6 +62,13 @@ def build_reverse_map(d: dict[str, str]) -> dict[str, str]:
 
 HAN_TO_PY = build_reverse_map(PY_TO_HAN)
 BUILTIN_HAN_TO_PY = build_reverse_map(BUILTIN_PY_TO_HAN)
+# '본인'은 키워드가 아니라 식별자 별칭으로만 취급한다.
+SPECIAL_IDENT_PY_TO_HAN = {
+    'self' : '본인',
+}
+SPECIAL_IDENT_HAN_TO_PY = {
+    '본인' : 'self',
+}
 
 # lexer에서키워드 판정에 쓸 한글 키워드 집합
 HAN_KEYWORDS = set(PY_TO_HAN.values())
@@ -69,3 +79,4 @@ HAN_KEYWORDS.add("성공")
 
 # 자주 쓰는 편의 상수 (기존 코드 호완용)
 KW_DEF = PY_TO_HAN["def"]
+KW_CLASS = PY_TO_HAN["class"]

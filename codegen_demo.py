@@ -3,11 +3,11 @@
 # AST(Program / Assign / BinOp / Number / Name)를
 # 실제 파이썬 코드 문자열로 바꿔보는 데모
 
-from mapping import BUILTIN_HAN_TO_PY
+from mapping import BUILTIN_HAN_TO_PY, SPECIAL_IDENT_HAN_TO_PY
 
 from ast_demo import (
     Program, Assign, ChainedAssign, AugAssign, If, While, Name, Number, BinOp, IfExpr, NamedExpr,
-    Expr, Stmt, For, FunctionDef, Return, Call, ExprStmt,
+    Expr, Stmt, For, FunctionDef, ClassDef, Return, Call, ExprStmt,
     Break, Continue, Pass,
     Bool, NoneLiteral, UnaryOp, String,
     ListLiteral, TupleLiteral, SetLiteral, DictLiteral, Index, Slice, Attribute,
@@ -19,7 +19,7 @@ def gen_expr(node: Expr) -> str:
     if isinstance(node, Number):
         return node.raw if node.raw is not None else str(node.value)
     elif isinstance(node, Name):
-        return node.id
+        return SPECIAL_IDENT_HAN_TO_PY.get(node.id, node.id)
     elif isinstance(node, BinOp):
         left = gen_expr(node.left)
         right = gen_expr(node.right)
@@ -176,16 +176,17 @@ def gen_stmt(node: Stmt) -> str:
         else:
             return f"return {gen_expr(node.value)}"
     
-    # 6) functionderf
+    # 6) functiondef
     elif isinstance(node, FunctionDef):
         parts: list[str] = []
         for p in node.args:
             if not isinstance(p, Param):
                 raise TypeError(f"FunctionDef.args에는 Param만 들어갈 수 있습니다: {p!r}")
             if p.default is None:
-                parts.append(p.name)
+                parts.append(SPECIAL_IDENT_HAN_TO_PY.get(p.name, p.name))
             else:
-                parts.append(f"{p.name}={gen_expr(p.default)}")
+                n = SPECIAL_IDENT_HAN_TO_PY.get(p.name, p.name)
+                parts.append(f"{n}={gen_expr(p.default)}")
         params = ", ".join(parts)
         lines = [f"def {node.name}({params}):"]
         if not node.body:
@@ -197,6 +198,22 @@ def gen_stmt(node: Stmt) -> str:
                     lines.append("    " + line)
 
         return "\n".join(lines)
+    elif isinstance(node, ClassDef):
+        if node.bases:
+            bases_code = ', '.join(gen_expr(b) for b in node.bases)
+            head = f"class {node.name}({bases_code}):"
+        else:
+            head = f"class {node.name}:"
+
+        lines = [head]
+        if not node.body:
+            lines.append('    pass')
+        else:
+            for stmt in node.body:
+                body_code = gen_stmt(stmt)
+                for line in body_code.splitlines():
+                    lines.append('    ' + line)
+        return '\n'.join(lines)
     elif isinstance(node, Import):
         items: list[str] = []
         for module, asname in node.names:

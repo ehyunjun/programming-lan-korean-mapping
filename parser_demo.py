@@ -11,7 +11,7 @@ from tokens import ADD_OPS, MUL_OPS, COMP_OPS, SHIFT_OPS, POW_OP, BITAND_OP, BIT
 from ast_demo import (
     Expr, Stmt, 
     Program, Assign, ChainedAssign, AugAssign, Name, Number, BinOp, 
-    If, While, For, FunctionDef, Return, Call, ExprStmt,
+    If, While, For, FunctionDef, ClassDef, Return, Call, ExprStmt,
     Break, Continue, Pass,
     Bool, NoneLiteral, UnaryOp,
     print_program,
@@ -864,6 +864,38 @@ class Parser:
         body = self.parse_suite()
         
         return For(target=target, iter=iter_expr, body=body)
+    
+    def parse_class(self) -> ClassDef:
+        """
+        클래스 정의:
+            클래스 이름:
+                suite
+
+            클래스 이름(베이스1, 베이스2):
+                suite
+        """
+        self.expect("KEYWORD", "클래스")
+
+        _, class_name = self.expect("IDENT")
+
+        bases: list[Expr] = []
+        if self.current == ("SYMBOL", "("):
+            self.advance()
+            if self.current != ("SYMBOL", ")"):
+                while True:
+                    bases.append(self.parse_expr())
+                    if self.current ==("SYMBOL", ","):
+                        self.advance()
+                        # trailing comma 허용
+                        if self.current == ("SYMBOL", ")"):
+                            break
+                        continue
+                    break
+            self.expect("SYMBOL", ")")
+
+        self.expect("SYMBOL", ":")
+        body = self.parse_suite()
+        return ClassDef(name=class_name, bases=bases, body=body)
 
     def parse_function(self) -> FunctionDef:
         """
@@ -995,6 +1027,8 @@ class Parser:
             return self.parse_while()
         elif ttype == "KEYWORD" and tvalue == "반복":
             return self.parse_for()
+        elif ttype == "KEYWORD" and tvalue == "클래스":
+            return self.parse_class()
         elif ttype == "KEYWORD" and tvalue == DEF_KEYWORD:
             return self.parse_function()
         elif ttype == "KEYWORD" and tvalue == "반환":
