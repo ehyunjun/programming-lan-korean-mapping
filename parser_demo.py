@@ -19,6 +19,7 @@ from ast_demo import (
     TupleLiteral, SetLiteral, DictLiteral,
     Compare, IfExpr, NamedExpr, 
     Param, Import, FromImport,
+    With, WithItem,
     Try, ExceptHandler, Raise,
 )
 
@@ -1018,6 +1019,35 @@ class Parser:
         
         return Try(body=body, handlers=handlers, orelse=orelse, finalbody=finalbody)
 
+    def parse_with(self) -> With:
+        """
+        with문:
+        함께 expr [별칭 target] (',' expr [별칭 target]* ':' suite)
+        """
+        self.expect("KEYWORD", "함께")
+
+        items: list[WithItem] = []
+        while True:
+            ctx = self.parse_expr()
+
+            opt: Expr | None = None
+            if self.current == ("KEYWORD", "별칭"):
+                self.advance()
+                if self.current[0] != "IDENT":
+                    raise SyntaxError(f"'별칭' 뒤에는 IDENT 타겟이 와야 합니다: {self.current}")
+                opt = self.parse_target()
+
+            items.append(WithItem(context_expr=ctx, optional_vars=opt))
+
+            if self.current == ("SYMBOL", ","):
+                self.advance()
+                continue
+            break
+
+        self.expect("SYMBOL", ":")
+        body = self.parse_suite()
+        return With(items=items, body=body)
+
     def parse_stmt(self) -> Stmt:
         ttype, tvalue = self.current
 
@@ -1048,6 +1078,8 @@ class Parser:
             return self.parse_from_import()
         elif ttype == "KEYWORD" and tvalue == "시도":
             return self.parse_try()
+        elif ttype == "KEYWORD" and tvalue == "함께":
+            return self.parse_with()
         elif ttype == "KEYWORD" and tvalue == "던지기":
             return self.parse_raise()
         elif ttype == "IDENT":

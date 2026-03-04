@@ -12,6 +12,7 @@ from ast_demo import (
     Bool, NoneLiteral, UnaryOp, String,
     ListLiteral, TupleLiteral, SetLiteral, DictLiteral, Index, Slice, Attribute,
     Compare, Param, Import, FromImport,
+    With, WithItem,
     Try, ExceptHandler, Raise,
 )
 def gen_expr(node: Expr) -> str:
@@ -214,6 +215,26 @@ def gen_stmt(node: Stmt) -> str:
                 for line in body_code.splitlines():
                     lines.append('    ' + line)
         return '\n'.join(lines)
+    elif isinstance(node, With):
+        items: list[str] = []
+        for it in node.items:
+            if not isinstance(it, WithItem):
+                raise TypeError(f"With.items에는 WithItem만 들어갈 수 있습니다: {it!r}")
+            part = gen_expr(it.context_expr)
+            if it.optional_vars is not None:
+                part += f" as {gen_expr(it.optional_vars)}"
+            items.append(part)
+
+        head = f"with {', '.join(items)}:"
+        lines = [head]
+        if not node.body:
+            lines.append(" pass")
+        else:
+            for stmt in node.body:
+                body_code = gen_stmt(stmt)
+                for line in body_code.splitlines():
+                    lines.append(" " + line)
+        return "\n".join(lines)
     elif isinstance(node, Import):
         items: list[str] = []
         for module, asname in node.names:

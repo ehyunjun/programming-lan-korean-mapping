@@ -12,6 +12,7 @@ PY_TO_HAN = {
     "else": "그외",
     "while": "동안",
     "for": "반복",
+    "with": "함께",
 
     # opp
     "class": "클래스",

@@ -187,6 +187,16 @@ class FromImport(Stmt):
     module: str
     names: List[tuple[str, str | None]]
 
+@dataclass
+class WithItem:
+    context_expr: Expr
+    optional_vars: Expr | None = None
+
+@dataclass
+class With(Stmt):
+    items: List[WithItem]
+    body: List[Stmt]
+
 # ======================
 # Exceptions
 # ======================
@@ -361,6 +371,19 @@ def print_stmt(node: Stmt, indent: int = 0):
         print_expr(node.target, indent + 2)
         print(f"{space} iter:")
         print_expr(node.iter, indent + 2)
+        print(f"{space} body:")
+        for s in node.body:
+            print_stmt(s, indent + 2)
+    elif isinstance(node, With):
+        print(f"{space}With")
+        print(f"{space} items:")
+        for it in node.items:
+            print(f"{space}  WithItem")
+            print(f"{space}   context_expr:")
+            print_expr(it.context_expr, indent + 4)
+            if it.optional_vars is not None:
+                print(f"{space}   optional_vars:")
+                print_expr(it.optional_vars, indent + 4)
         print(f"{space} body:")
         for s in node.body:
             print_stmt(s, indent + 2)
