@@ -1047,9 +1047,26 @@ class Parser:
         self.expect("SYMBOL", ":")
         body = self.parse_suite()
         return With(items=items, body=body)
+    
+    def raise_edu_v1_unsupported(self, keyword: str) -> None:
+        unsupported_messages = {
+            "클래스": "현재 교육용 1차 버전에서는 클래스 문법을 지원하지 않습니다.",
+            "불러오기": "현재 교육용 1차 버전에서는 import 문법을 지원하지 않습니다.",
+            "꺼내기": "현재 교육용 1차 버전에서는 from import 문법을 지원하지 않습니다.",
+            "시도": "현재 교육용 1차 버전에서는 예외 처리 문법을 지원하지 않습니다.",
+            "함께": "현재 교육용 1차 버전에서는 with 문법을 지원하지 않습니다.",
+            "던지기": "현재 교육용 1차 버전에서는 raise 문법을 지원하지 않습니다.",
+        }
+
+        message = unsupported_messages.get(keyword)
+        if message is not None:
+            raise SyntaxError(message)
 
     def parse_stmt(self) -> Stmt:
         ttype, tvalue = self.current
+
+        if ttype == "KEYWORD":
+            self.raise_edu_v1_unsupported(tvalue)
 
         if ttype == "KEYWORD" and tvalue == "만약":
             return self.parse_if()
