@@ -15,6 +15,7 @@ from lexer_demo import simple_lexer
 from parser_demo import Parser
 from codegen_demo import gen_program
 from edu_scope import EduScopeError, validate_edu_v1
+from edu_error import friendly_error_message
 
 @dataclass
 class CompileResult:
@@ -62,17 +63,17 @@ def compile_korean_to_python(source: str) -> CompileResult:
     
     except SyntaxError as e:
         return CompileResult(
-            ok=False, error=f"문법 오류가 있어요: {e}", error_type="SyntaxError",
+            ok=False, error=friendly_error_message(e, source), error_type="SyntaxError",
         )
     
     except IndentationError as e:
         return CompileResult(
-            ok=False, error=f"들여쓰기 오류가 있어요: {e}", error_type="IndentationError",
+            ok=False, error=friendly_error_message(e, source), error_type="IndentationError",
         )
     
     except Exception as e:
         return CompileResult(
-            ok=False, error=f"알 수 없는 오류가 발생했어요: {e}", error_type=type(e).__name__,
+            ok=False, error=friendly_error_message(e, source), error_type=type(e).__name__,
         )
     
 
