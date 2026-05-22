@@ -28,7 +28,7 @@ def print_section(title: str, content: str) -> None:
     print(SECTION_LINE)
 
     if content.strip():
-        print(content.rstrtip())
+        print(content.rstrip())
     else:
         print("(내용 없음)")
     
@@ -134,4 +134,4 @@ def main(argv=None) -> int:
 
 
 if __name__ == "__main__":
-    raise SyntaxError(main())
+    raise SystemExit(main())
