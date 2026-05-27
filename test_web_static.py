@@ -14,6 +14,7 @@ MAIN_JS_PATH = WEB_DIR / "main.js"
 REQUIRED_INDEX_TEXTS = [
     "한글 Python 학습 도구",
     "lesson 목록",
+    "lessonDescription",
     "한글 코드",
     "변환된 Python 코드",
     "실행 결과",
@@ -22,6 +23,13 @@ REQUIRED_INDEX_TEXTS = [
 ]
 
 REQUIRED_MAIN_JS_TEXTS = [
+    "id:",
+    "title:",
+    "description:",
+    "starter_code:",
+    "answer_code:",
+    "koreanCode.value = lesson.starter_code",
+    "lessonDescription.textContent = lesson.description",
     "아직 변환 API가 연결되지 않았습니다.",
     "아직 실행 API가 연결되지 않았습니다.",
 ]
