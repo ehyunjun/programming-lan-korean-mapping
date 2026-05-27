@@ -136,10 +136,40 @@ def has_block_line_without_colon(source: str) -> bool:
         if not line or line.startswith("#"):
             continue
 
-        if line.startswith(BLOCK_KEYWORDS) and not line.endswith(":"):
+        if line.startswith(BLOCK_KEYWORDS) and not has_trailing_colon_outside_strings(line):
             return True
-        
-        return False
+
+    return False
+
+def has_trailing_colon_outside_strings(line: str) -> bool:
+    """문자열 밖의 마지막 의미 있는 문자가 ':'인지 확인한다."""
+    last_char = ""
+    quote: str | None = None
+    escaped = False
+
+    for ch in line:
+        if quote is not None:
+            if escaped:
+                escaped = False
+                continue
+            if ch == "\\":
+                escaped = True
+                continue
+            if ch == quote:
+                quote = None
+            continue
+
+        if ch in ('"', "'"):
+            quote = ch
+            continue
+
+        if ch == "#":
+            break
+
+        if not ch.isspace():
+            last_char = ch
+
+    return last_char == ":"
     
 def has_unclosed_paren(source: str) -> bool:
     """문자열 밖의 괄호 개수를 간단히 확인한다."""
@@ -174,7 +204,7 @@ def count_outside_strings(source: str, target: str) -> int:
         if ch == target:
             count += 1
 
-        return count
+    return count
     
 def make_colon_missing_message() -> str:
     return make_error_message(
@@ -199,7 +229,7 @@ def make_indent_needed_message() -> str:
 
 def make_right_paren_missing_message() -> str:
     return make_error_message(
-        title="닫는 괄호 ')' 가 빠졌어요.",
+        title="닫는 괄호')'가 빠졌어요.",
         reason="여는 괄호 '('를 사용했다면 마지막에 닫는 괄호 ')'도 필요해요.",
         solution="출력(...) 입력(...) 범위(...) 처럼 괄호가 제대로 닫혔는지 확인해주세요.",
         example="출력(\"안녕\")",
