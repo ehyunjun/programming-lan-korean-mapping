@@ -1,37 +1,8 @@
-const lessons = [
-  {
-    id: "01_print",
-    title: "출력하기",
-    description:
-      "출력은 화면에 글자나 숫자를 보여주는 기능입니다. Python에서는 print를 사용하고, 한글 코드에서는 출력으로 사용할 수 있습니다.",
-    starter_code: '출력("안녕")\n출력("한글 파이썬에 오신 것을 환영합니다")',
-    answer_code: '출력("안녕")\n출력("한글 파이썬에 오신 것을 환영합니다")',
-  },
-  {
-    id: "02_variable",
-    title: "변수 만들기",
-    description:
-      "변수는 값을 저장해두는 이름입니다. 이름표를 붙여두는 것처럼, 값을 변수에 넣어두고 나중에 다시 사용할 수 있습니다.",
-    starter_code: '이름 = "현준"\n출력(이름)',
-    answer_code: '이름 = "현준"\n출력(이름)',
-  },
-  {
-    id: "03_if",
-    title: "조건문 사용하기",
-    description:
-      "조건문은 조건이 맞을 때와 맞지 않을 때 실행할 코드를 나누는 문법입니다. 한글 코드에서는 만약, 그외를 사용합니다.",
-    starter_code: '점수 = 80\n\n만약 점수 >= 60:\n    출력("합격")\n그외:\n    출력("불합격")',
-    answer_code: '점수 = 80\n\n만약 점수 >= 60:\n    출력("합격")\n그외:\n    출력("불합격")',
-  },
-  {
-    id: "04_for_range",
-    title: "반복문 사용하기",
-    description:
-      "반복문은 같은 코드를 여러 번 실행할 때 사용합니다. edu-v1에서는 반복 i 안에 범위(...) 형태를 먼저 연습합니다.",
-    starter_code: "반복 i 안에 범위(1, 6):\n    출력(i)",
-    answer_code: "반복 i 안에 범위(1, 6):\n    출력(i)",
-  },
-];
+let lessons = [];
+
+const REQUIRED_LESSON_FIELDS = ["id:", "title:", "description:", "starter_code:", "answer_code:"];
+const LESSON_LOAD_ERROR_MESSAGE =
+  "lesson 데이터를 불러오지 못했습니다. 로컬 서버로 실행했는지 확인해주세요.";
 
 const lessonList = document.querySelector("#lessonList");
 const lessonDescription = document.querySelector("#lessonDescription");
@@ -48,6 +19,47 @@ function setNotice(target, message) {
 
 function clearNotice(target) {
   target.classList.remove("notice");
+}
+
+function showLessonLoadError() {
+  lessonList.innerHTML = "";
+  lessonDescription.textContent = LESSON_LOAD_ERROR_MESSAGE;
+  koreanCode.value = "";
+  pythonOutput.textContent = "";
+  runOutput.textContent = "";
+
+  const message = document.createElement("div");
+  message.className = "lesson-item active";
+  message.textContent = LESSON_LOAD_ERROR_MESSAGE;
+  lessonList.appendChild(message);
+}
+
+function getLessonSummary(lesson) {
+  return (lesson.description || "").split(".")[0] + ".";
+}
+
+async function loadLessons() {
+  try {
+    const response = await fetch("../lessons/lessons.json");
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (!Array.isArray(data)) {
+      throw new Error("lessons.json의 최상위 구조가 배열이 아닙니다.");
+    }
+
+    lessons = data;
+    renderLessons();
+
+    if (lessons.length > 0) {
+      selectLesson(lessons[0].id);
+    }
+  } catch (error) {
+    console.error(error);
+    showLessonLoadError();
+  }
 }
 
 function selectLesson(lessonId) {
@@ -78,7 +90,7 @@ function renderLessons() {
     button.dataset.lessonId = lesson.id;
     button.innerHTML = `
       <span class="lesson-title">${lesson.title}</span>
-      <span class="lesson-goal">${lesson.description.split(".")[0]}.</span>
+      <span class="lesson-goal">${getLessonSummary(lesson)}</span>
     `;
     button.addEventListener("click", () => selectLesson(lesson.id));
     lessonList.appendChild(button);
@@ -93,5 +105,5 @@ runButton.addEventListener("click", () => {
   setNotice(runOutput, "아직 실행 API가 연결되지 않았습니다.");
 });
 
-renderLessons();
-selectLesson(lessons[0].id);
+void REQUIRED_LESSON_FIELDS;
+loadLessons();
