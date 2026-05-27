@@ -23,6 +23,11 @@ REQUIRED_INDEX_TEXTS = [
 ]
 
 REQUIRED_MAIN_JS_TEXTS = [
+    'fetch("../lessons/lessons.json")',
+    "async function loadLessons()",
+    "lesson 데이터를 불러오지 못했습니다. 로컬 서버로 실행했는지 확인해주세요.",
+    "renderLessons();",
+    "selectLesson(lessons[0].id);",
     "id:",
     "title:",
     "description:",
