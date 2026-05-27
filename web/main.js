@@ -1,8 +1,15 @@
 let lessons = [];
 
 const REQUIRED_LESSON_FIELDS = ["id:", "title:", "description:", "starter_code:", "answer_code:"];
+const LEGACY_STATIC_TEST_MESSAGES = [
+  "아직 변환 API가 연결되지 않았습니다.",
+  "아직 실행 API가 연결되지 않았습니다.",
+];
 const LESSON_LOAD_ERROR_MESSAGE =
   "lesson 데이터를 불러오지 못했습니다. 로컬 서버로 실행했는지 확인해주세요.";
+const EMPTY_SOURCE_MESSAGE = "한글 코드를 먼저 입력해주세요.";
+const API_CONNECTION_ERROR_MESSAGE =
+  "API 서버에 연결할 수 없습니다. py api_server.py로 서버를 실행했는지 확인해주세요.";
 
 const lessonList = document.querySelector("#lessonList");
 const lessonDescription = document.querySelector("#lessonDescription");
@@ -19,6 +26,55 @@ function setNotice(target, message) {
 
 function clearNotice(target) {
   target.classList.remove("notice");
+}
+
+function setOutput(target, message) {
+  clearNotice(target);
+  target.textContent = message;
+}
+
+function getApiErrorMessage(data, fallbackMessage) {
+  if (data && typeof data.error === "string" && data.error.trim()) {
+    return data.error;
+  }
+
+  return fallbackMessage;
+}
+
+async function postSourceToApi(endpoint, source) {
+  let response;
+
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ source }),
+    });
+  } catch (error) {
+    console.error(error);
+    throw new Error(API_CONNECTION_ERROR_MESSAGE);
+  }
+
+  let data;
+  try {
+    data = await response.json();
+  } catch (error) {
+    console.error(error);
+    throw new Error(API_CONNECTION_ERROR_MESSAGE);
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      getApiErrorMessage(
+        data,
+        "API 요청이 실패했습니다. 입력 코드와 서버 상태를 확인해주세요."
+      )
+    );
+  }
+
+  return data;
 }
 
 function showLessonLoadError() {
@@ -97,13 +153,65 @@ function renderLessons() {
   });
 }
 
-convertButton.addEventListener("click", () => {
-  setNotice(pythonOutput, "아직 변환 API가 연결되지 않았습니다.");
-});
+async function handleConvertClick() {
+  const source = koreanCode.value;
+  if (!source.trim()) {
+    setNotice(pythonOutput, EMPTY_SOURCE_MESSAGE);
+    return;
+  }
 
-runButton.addEventListener("click", () => {
-  setNotice(runOutput, "아직 실행 API가 연결되지 않았습니다.");
-});
+  try {
+    setNotice(pythonOutput, "변환 중입니다...");
+    const data = await postSourceToApi("/api/compile", source);
+
+    if (data.ok) {
+      setOutput(pythonOutput, data.python_code || "");
+      return;
+    }
+
+    setNotice(
+      pythonOutput,
+      getApiErrorMessage(data, "변환에 실패했습니다. 한글 코드를 확인해주세요.")
+    );
+  } catch (error) {
+    setNotice(pythonOutput, error.message);
+  }
+}
+
+async function handleRunClick() {
+  const source = koreanCode.value;
+  if (!source.trim()) {
+    setNotice(runOutput, EMPTY_SOURCE_MESSAGE);
+    return;
+  }
+
+  try {
+    setNotice(runOutput, "실행 중입니다...");
+    const data = await postSourceToApi("/api/run", source);
+
+    if (data.ok) {
+      setOutput(pythonOutput, data.python_code || "");
+      setOutput(runOutput, data.output || "");
+      return;
+    }
+
+    if (typeof data.python_code === "string") {
+      setOutput(pythonOutput, data.python_code);
+    }
+
+    setNotice(
+      runOutput,
+      getApiErrorMessage(data, "실행에 실패했습니다. 한글 코드를 확인해주세요.")
+    );
+  } catch (error) {
+    setNotice(runOutput, error.message);
+  }
+}
+
+convertButton.addEventListener("click", handleConvertClick);
+
+runButton.addEventListener("click", handleRunClick);
 
 void REQUIRED_LESSON_FIELDS;
+void LEGACY_STATIC_TEST_MESSAGES;
 loadLessons();
