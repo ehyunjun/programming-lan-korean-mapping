@@ -152,6 +152,7 @@ Python 코드
 | `test_lesson.py` | lessons/lessons.json 데이터 검증 |
 | `test_edu_error.py` | 입문자 친화 오류 메시지 검증 |
 | `test_edu_runner.py` | Python 실행 헬퍼 검증 |
+| `test_edu_cli.py` | edu_cli.py example.han 실행 흐름 검증 |
 | `test_examples.py` | examples/*.han 예제 검증 |
 | `test_all.py` | 전체 테스트 실행 |
 
@@ -221,6 +222,12 @@ py test_edu_runner.py
 ```
 
 변환된 Python 코드를 실행하는 `edu_runner.py`가 출력, 출력 없음, 실행 중 오류를 올바르게 처리하는지 검사합니다.
+
+```bash
+py test_edu_cli.py
+```
+
+`edu_cli.py example.han` 실행 흐름을 검증합니다.
 
 ```bash
 py test_examples.py
