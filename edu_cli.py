@@ -12,11 +12,10 @@
 # py edu_cli.py example.han --no-exec
 
 import argparse
-import io
 import sys
-from contextlib import redirect_stdout
 
 from edu_api import compile_korean_to_python
+from edu_runner import run_python_code
 
 
 SECTION_LINE = "=" * 50
@@ -40,46 +39,6 @@ def read_source_file(filename: str) -> str:
     with open(filename, "r", encoding="utf-8") as f:
         return f.read()
     
-
-def run_python_code(python_code: str) -> tuple[bool, str]:
-    """
-    변환된 Python 코드를 실행하고 출력 결과를 문자열로 반환한다.
-    
-    성공하면:
-        (True, 실행 출력)
-        
-    실패하면:
-        (False, 오류 메시지)
-    """
-    output = io.StringIO()
-
-    try:
-        env = {}
-
-        with redirect_stdout(output):
-            exec(python_code, env, env)
-
-        result = output.getvalue()
-        if result.strip():
-            return True, result.rstrip()
-        
-        return True, "(출력 없음)"
-    
-    except Exception as e:
-        return False, make_runtime_error_message(e)
-    
-
-def make_runtime_error_message(error: Exception) -> str:
-    """실행 중 발생한 오류를 입문자가 읽기 쉬운 문장으로 바꾼다."""
-    return (
-        "문제: 실행 중 오류가 발생했어요.\n"
-        "\n"
-        f"이유: {type(error).__name__}: {error}\n"
-        "\n"
-        "해결: 변수 이름이 맞는지, 문자열과 숫자를 잘못 더하지 않았는지," \
-        "함수 이름을 잘못 적지 않았는지 확인해보세요."
-    )
-
 
 def run_cli(filename: str, *, execute: bool = True) -> int:
     """파일 하나를 읽어서 변환 결과와 실행 결과를 출력한다."""
