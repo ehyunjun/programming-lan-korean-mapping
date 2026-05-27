@@ -2,30 +2,39 @@ const lessons = [
   {
     id: "01_print",
     title: "출력하기",
-    goal: "화면에 문장을 출력합니다.",
-    code: '출력("안녕")\n출력("한글 Python 학습을 시작합니다")',
+    description:
+      "출력은 화면에 글자나 숫자를 보여주는 기능입니다. Python에서는 print를 사용하고, 한글 코드에서는 출력으로 사용할 수 있습니다.",
+    starter_code: '출력("안녕")\n출력("한글 파이썬에 오신 것을 환영합니다")',
+    answer_code: '출력("안녕")\n출력("한글 파이썬에 오신 것을 환영합니다")',
   },
   {
     id: "02_variable",
     title: "변수 만들기",
-    goal: "값을 이름에 저장하고 다시 사용합니다.",
-    code: '이름 = "현준"\n출력(이름)',
+    description:
+      "변수는 값을 저장해두는 이름입니다. 이름표를 붙여두는 것처럼, 값을 변수에 넣어두고 나중에 다시 사용할 수 있습니다.",
+    starter_code: '이름 = "현준"\n출력(이름)',
+    answer_code: '이름 = "현준"\n출력(이름)',
   },
   {
     id: "03_if",
     title: "조건문 사용하기",
-    goal: "조건에 따라 다른 문장을 실행합니다.",
-    code: '점수 = 80\n\n만약 점수 >= 60:\n    출력("합격")\n그외:\n    출력("불합격")',
+    description:
+      "조건문은 조건이 맞을 때와 맞지 않을 때 실행할 코드를 나누는 문법입니다. 한글 코드에서는 만약, 그외를 사용합니다.",
+    starter_code: '점수 = 80\n\n만약 점수 >= 60:\n    출력("합격")\n그외:\n    출력("불합격")',
+    answer_code: '점수 = 80\n\n만약 점수 >= 60:\n    출력("합격")\n그외:\n    출력("불합격")',
   },
   {
     id: "04_for_range",
     title: "반복문 사용하기",
-    goal: "범위 안의 숫자를 차례대로 사용합니다.",
-    code: "반복 i 안에 범위(1, 6):\n    출력(i)",
+    description:
+      "반복문은 같은 코드를 여러 번 실행할 때 사용합니다. edu-v1에서는 반복 i 안에 범위(...) 형태를 먼저 연습합니다.",
+    starter_code: "반복 i 안에 범위(1, 6):\n    출력(i)",
+    answer_code: "반복 i 안에 범위(1, 6):\n    출력(i)",
   },
 ];
 
 const lessonList = document.querySelector("#lessonList");
+const lessonDescription = document.querySelector("#lessonDescription");
 const koreanCode = document.querySelector("#koreanCode");
 const pythonOutput = document.querySelector("#pythonOutput");
 const runOutput = document.querySelector("#runOutput");
@@ -47,7 +56,8 @@ function selectLesson(lessonId) {
     return;
   }
 
-  koreanCode.value = lesson.code;
+  koreanCode.value = lesson.starter_code;
+  lessonDescription.textContent = lesson.description;
   clearNotice(pythonOutput);
   clearNotice(runOutput);
   pythonOutput.textContent = "";
@@ -68,7 +78,7 @@ function renderLessons() {
     button.dataset.lessonId = lesson.id;
     button.innerHTML = `
       <span class="lesson-title">${lesson.title}</span>
-      <span class="lesson-goal">${lesson.goal}</span>
+      <span class="lesson-goal">${lesson.description.split(".")[0]}.</span>
     `;
     button.addEventListener("click", () => selectLesson(lesson.id));
     lessonList.appendChild(button);
