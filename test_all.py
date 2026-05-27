@@ -15,6 +15,7 @@ TEST_COMMANDS = [
     ("CLI 변환/실행 검사", [sys.executable, "test_edu_cli.py"]),
     ("examples 예제 검사", [sys.executable, "test_examples.py"]),
     ("web 정적 파일 검사", [sys.executable, "test_web_static.py"]),
+    ("API 서버 검사", [sys.executable, "test_api_server.py"]),
 ]
 
 
