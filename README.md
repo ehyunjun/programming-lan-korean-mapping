@@ -204,11 +204,21 @@ py edu_cli.py example.han
 
 ### 웹 첫 화면 열기
 
-```text
-web/index.html
+프로젝트 루트에서 로컬 정적 서버를 실행합니다.
+
+```bash
+py -m http.server 8000
 ```
 
-`web/index.html`은 브라우저에서 바로 열어볼 수 있는 정적 첫 화면입니다.  
+브라우저에서 아래 주소로 접속합니다.
+
+```text
+http://localhost:8000/web/
+```
+
+확인이 끝나면 서버를 실행한 터미널에서 `Ctrl + C`로 종료합니다.
+
+`web/index.html`을 더블클릭해서 `file://`로 열면 브라우저 보안 정책 때문에 `lessons/lessons.json`을 불러오지 못할 수 있습니다.  
 현재는 실제 변환/실행 API가 연결되지 않았고, `변환하기`와 `실행하기` 버튼은 임시 안내 메시지만 보여줍니다.
 
 ### 전체 테스트 실행
