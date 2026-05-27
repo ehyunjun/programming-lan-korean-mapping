@@ -9,9 +9,9 @@ import sys
 
 
 TEST_COMMANDS = [
-    ("lesson 데이터 검사", ["py", "test_lesson.py"]),
-    ("입문자 친화 오류 메시지 검사", ["py", "test_edu_error.py"]),
-    ("examples 예제 검사", ["py", "test_examples.py"]),
+    ("lesson 데이터 검사", [sys.executable, "test_lesson.py"]),
+    ("입문자 친화 오류 메시지 검사", [sys.executable, "test_edu_error.py"]),
+    ("examples 예제 검사", [sys.executable, "test_examples.py"]),
 ]
 
 

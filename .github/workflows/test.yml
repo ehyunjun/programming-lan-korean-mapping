@@ -20,15 +20,5 @@ jobs:
         with:
           python-version: "3.12"
 
-      # Locally on Windows this project uses `py test_all.py`.
-      # In GitHub Actions we run `python test_all.py`; this small shim lets
-      # the existing test_all.py continue to launch child tests through `py`.
-      - name: Add py compatibility command
-        run: |
-          mkdir -p "$RUNNER_TEMP/bin"
-          printf '#!/usr/bin/env bash\npython "$@"\n' > "$RUNNER_TEMP/bin/py"
-          chmod +x "$RUNNER_TEMP/bin/py"
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
-
       - name: Run tests
         run: python test_all.py
