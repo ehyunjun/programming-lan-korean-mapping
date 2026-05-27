@@ -88,7 +88,9 @@ programming-lan-korean-mapping/
 ├── tokens.py
 ├── edu_scope.py
 ├── edu_api.py
-├── test_edu_v1.py
+├── edu_runner.py
+├── edu_cli.py
+├── test_all.py
 └── edu_scope_v1.md
 ```
 
@@ -144,10 +146,12 @@ Python 코드
 | `mapping.py` | 한글 키워드와 Python 키워드 매핑 |
 | `tokens.py` | 토큰 타입 정의 |
 | `edu_scope.py` | edu-v1에서 허용할 문법과 막을 문법 검사 |
-| `edu_api.py` | 웹 IDE에서 사용할 변환 API |
-| `edu_cli.py` | 한글 코드 파일을 변환하고 실행하는 학습용 CLI |
+| `edu_api.py` | 한글 코드를 Python 코드로 변환하는 변환 전용 API |
+| `edu_runner.py` | 변환된 Python 코드를 실행하고 출력/오류 메시지 반환 |
+| `edu_cli.py` | CLI 입력/출력 담당, `edu_api.py`와 `edu_runner.py`를 조합 |
 | `test_lesson.py` | lessons/lessons.json 데이터 검증 |
 | `test_edu_error.py` | 입문자 친화 오류 메시지 검증 |
+| `test_edu_runner.py` | Python 실행 헬퍼 검증 |
 | `test_examples.py` | examples/*.han 예제 검증 |
 | `test_all.py` | 전체 테스트 실행 |
 
@@ -213,6 +217,12 @@ py test_edu_error.py
 콜론 누락, 들여쓰기 누락, 괄호 누락 같은 오류가 입문자에게 읽기 쉬운 한국어 메시지로 바뀌는지 검사합니다.
 
 ```bash
+py test_edu_runner.py
+```
+
+변환된 Python 코드를 실행하는 `edu_runner.py`가 출력, 출력 없음, 실행 중 오류를 올바르게 처리하는지 검사합니다.
+
+```bash
 py test_examples.py
 ```
 
@@ -256,7 +266,7 @@ for i in range(1, 6):
 기존 `run_korean.py`는 변환된 Python 코드를 바로 실행하는 실험용 파일입니다.
 
 하지만 웹 IDE에서는 사용자가 입력한 코드를 서버에서 바로 실행하면 위험할 수 있습니다.  
-그래서 `edu-v1`에서는 `edu_api.py`를 중심으로 사용합니다.
+그래서 `edu-v1`에서는 변환과 실행 책임을 나누어 둡니다.
 
 ```text
 run_korean.py
@@ -265,6 +275,12 @@ run_korean.py
 edu_api.py
 → 웹 IDE에서 사용할 변환 전용 API
 → 직접 exec 실행하지 않음
+
+edu_runner.py
+→ 변환된 Python 코드를 실행하고 stdout 또는 실행 오류 메시지 반환
+
+edu_cli.py
+→ 파일 읽기, 화면 출력, 변환/실행 결과 표시
 ```
 
 웹 버전에서는 다음과 같은 방향을 목표로 합니다.
