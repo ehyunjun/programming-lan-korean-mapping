@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>한글 Python 학습 도구</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <h1>한글 Python 학습 도구</h1>
+          <p>한글 코드로 Python의 기본 흐름을 연습합니다.</p>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="lesson-panel" aria-label="lesson 목록">
+          <div class="panel-heading">
+            <h2>lesson 목록</h2>
+          </div>
+          <div id="lessonList" class="lesson-list"></div>
+        </aside>
+
+        <section class="editor-panel" aria-label="한글 코드 입력">
+          <div class="panel-heading">
+            <h2>한글 코드</h2>
+            <div class="actions">
+              <button id="convertButton" type="button">변환하기</button>
+              <button id="runButton" type="button">실행하기</button>
+            </div>
+          </div>
+          <textarea id="koreanCode" spellcheck="false"></textarea>
+        </section>
+
+        <section class="output-grid" aria-label="결과 출력">
+          <article class="output-panel">
+            <div class="panel-heading">
+              <h2>변환된 Python 코드</h2>
+            </div>
+            <pre id="pythonOutput" class="output-box"></pre>
+          </article>
+
+          <article class="output-panel">
+            <div class="panel-heading">
+              <h2>실행 결과</h2>
+            </div>
+            <pre id="runOutput" class="output-box"></pre>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script src="main.js"></script>
+  </body>
+</html>
