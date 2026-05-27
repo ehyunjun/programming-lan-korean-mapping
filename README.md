@@ -145,7 +145,11 @@ Python 코드
 | `tokens.py` | 토큰 타입 정의 |
 | `edu_scope.py` | edu-v1에서 허용할 문법과 막을 문법 검사 |
 | `edu_api.py` | 웹 IDE에서 사용할 변환 API |
-| `test_edu_v1.py` | edu-v1 동작 테스트 |
+| `edu_cli.py` | 한글 코드 파일을 변환하고 실행하는 학습용 CLI |
+| `test_lesson.py` | lessons/lessons.json 데이터 검증 |
+| `test_edu_error.py` | 입문자 친화 오류 메시지 검증 |
+| `test_examples.py` | examples/*.han 예제 검증 |
+| `test_all.py` | 전체 테스트 실행 |
 
 ---
 
@@ -180,35 +184,41 @@ else:
 
 ## 실행 방법
 
-### 1. edu-v1 브랜치로 이동
+### 기본 실행
 
 ```bash
-git checkout edu-v1
+py edu_cli.py example.han
 ```
 
-### 2. 테스트 실행
+`edu_cli.py`는 한글 코드 파일을 읽고, 변환된 Python 코드와 실행 결과를 함께 보여줍니다.
+
+### 전체 테스트 실행
 
 ```bash
-python test_edu_v1.py
+py test_all.py
 ```
 
-정상적으로 동작하면 다음과 같은 테스트 흐름을 확인할 수 있습니다.
+### 개별 테스트
 
-```text
-[성공 테스트] 출력
-[성공 테스트] 변수 대입
-[성공 테스트] 조건문
-[성공 테스트] 반복문 범위
-[성공 테스트] 함수 정의
-[성공 테스트] 함수 반환
-[실패 테스트] 불러오기 막기
-[실패 테스트] 클래스 막기
-[실패 테스트] 범위 아닌 반복 막기
-[실패 테스트] 함수 밖 반환 막기
-[실패 테스트] 반복문 밖 중단 막기
-
-모든 edu-v1 테스트가 끝났습니다.
+```bash
+py test_lesson.py
 ```
+
+`lessons/lessons.json`이 웹 IDE에서 사용할 수 있는 형태인지 검사합니다.
+
+```bash
+py test_edu_error.py
+```
+
+콜론 누락, 들여쓰기 누락, 괄호 누락 같은 오류가 입문자에게 읽기 쉬운 한국어 메시지로 바뀌는지 검사합니다.
+
+```bash
+py test_examples.py
+```
+
+`examples/*.han` 예제 파일을 검사합니다. 일반 예제는 컴파일에 성공해야 통과하고, `99_error_`로 시작하는 예제는 의도적으로 오류를 담은 예제라서 컴파일 실패해야 정상입니다.
+
+모든 검사를 한 번에 확인할 때는 `py test_all.py`를 사용하면 됩니다.
 
 ---
 
@@ -280,7 +290,7 @@ edu_api.py
 ### 2단계: 학습형 CLI 만들기
 
 ```bash
-python edu_cli.py example.han
+py edu_cli.py example.han
 ```
 
 출력 예시:
