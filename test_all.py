@@ -14,6 +14,7 @@ TEST_COMMANDS = [
     ("Python 실행 헬퍼 검사", [sys.executable, "test_edu_runner.py"]),
     ("CLI 변환/실행 검사", [sys.executable, "test_edu_cli.py"]),
     ("examples 예제 검사", [sys.executable, "test_examples.py"]),
+    ("web 정적 파일 검사", [sys.executable, "test_web_static.py"]),
 ]
 
 
