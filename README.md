@@ -90,6 +90,7 @@ programming-lan-korean-mapping/
 ├── edu_api.py
 ├── edu_runner.py
 ├── edu_cli.py
+├── web/
 ├── test_all.py
 └── edu_scope_v1.md
 ```
@@ -149,11 +150,15 @@ Python 코드
 | `edu_api.py` | 한글 코드를 Python 코드로 변환하는 변환 전용 API |
 | `edu_runner.py` | 변환된 Python 코드를 실행하고 출력/오류 메시지 반환 |
 | `edu_cli.py` | CLI 입력/출력 담당, `edu_api.py`와 `edu_runner.py`를 조합 |
+| `web/index.html` | 브라우저에서 바로 열어볼 수 있는 웹 IDE 첫 화면 |
+| `web/style.css` | 웹 IDE 첫 화면 스타일 |
+| `web/main.js` | lesson 샘플 표시와 임시 버튼 동작 |
 | `test_lesson.py` | lessons/lessons.json 데이터 검증 |
 | `test_edu_error.py` | 입문자 친화 오류 메시지 검증 |
 | `test_edu_runner.py` | Python 실행 헬퍼 검증 |
 | `test_edu_cli.py` | edu_cli.py example.han 실행 흐름 검증 |
 | `test_examples.py` | examples/*.han 예제 검증 |
+| `test_web_static.py` | web/ 정적 파일 구조 검증 |
 | `test_all.py` | 전체 테스트 실행 |
 
 ---
@@ -197,6 +202,15 @@ py edu_cli.py example.han
 
 `edu_cli.py`는 한글 코드 파일을 읽고, 변환된 Python 코드와 실행 결과를 함께 보여줍니다.
 
+### 웹 첫 화면 열기
+
+```text
+web/index.html
+```
+
+`web/index.html`은 브라우저에서 바로 열어볼 수 있는 정적 첫 화면입니다.  
+현재는 실제 변환/실행 API가 연결되지 않았고, `변환하기`와 `실행하기` 버튼은 임시 안내 메시지만 보여줍니다.
+
 ### 전체 테스트 실행
 
 ```bash
@@ -234,6 +248,12 @@ py test_examples.py
 ```
 
 `examples/*.han` 예제 파일을 검사합니다. 일반 예제는 컴파일에 성공해야 통과하고, `99_error_`로 시작하는 예제는 의도적으로 오류를 담은 예제라서 컴파일 실패해야 정상입니다.
+
+```bash
+py test_web_static.py
+```
+
+`web/` 정적 파일 구조를 검증합니다.
 
 모든 검사를 한 번에 확인할 때는 `py test_all.py`를 사용하면 됩니다.
 
