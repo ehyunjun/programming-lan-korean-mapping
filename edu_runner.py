@@ -4,6 +4,7 @@
 # edu_api.py는 변환 전용으로 유지하고, 실행 책임은 이 파일에서 맡는다.
 
 import io
+import ast
 from contextlib import redirect_stdout
 
 
@@ -20,6 +21,9 @@ def run_python_code(python_code: str) -> tuple[bool, str]:
     output = io.StringIO()
 
     try:
+        if contains_input_call(python_code):
+            return False, make_input_not_supported_message()
+
         env = {}
 
         with redirect_stdout(output):
@@ -33,6 +37,38 @@ def run_python_code(python_code: str) -> tuple[bool, str]:
 
     except Exception as e:
         return False, make_runtime_error_message(e)
+
+
+def contains_input_call(python_code: str) -> bool:
+    """Python AST에서 직접 input(...) 호출이 있는지 확인한다."""
+    tree = ast.parse(python_code)
+
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "input"
+        ):
+            return True
+
+    return False
+
+
+def make_input_not_supported_message() -> str:
+    """웹 실행에서 input() 사용을 막을 때 보여줄 안내 메시지."""
+    return (
+        "문제: 웹 실행에서는 입력()을 아직 사용할 수 없어요.\n"
+        "\n"
+        "이유: 브라우저 실행 결과 창에서는 터미널처럼 키보드 입력을 받을 수 없어요.\n"
+        "Python의 input()은 실행 중에 사용자가 값을 입력할 때까지 기다리기 때문에, "
+        "웹 실행이 멈춘 것처럼 보일 수 있어요.\n"
+        "\n"
+        "해결: 입력() 대신 변수에 값을 직접 넣어보세요.\n"
+        "\n"
+        "예시:\n"
+        "이름 = \"현준\"\n"
+        "출력(이름)"
+    )
 
 
 def make_runtime_error_message(error: Exception) -> str:
