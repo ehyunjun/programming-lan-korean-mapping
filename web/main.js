@@ -1,4 +1,5 @@
 let lessons = [];
+let selectedLessonId = null;
 
 const REQUIRED_LESSON_FIELDS = ["id:", "title:", "description:", "starter_code:", "answer_code:"];
 const LEGACY_STATIC_TEST_MESSAGES = [
@@ -10,6 +11,12 @@ const LESSON_LOAD_ERROR_MESSAGE =
 const EMPTY_SOURCE_MESSAGE = "한글 코드를 먼저 입력해주세요.";
 const API_CONNECTION_ERROR_MESSAGE =
   "API 서버에 연결할 수 없습니다. py api_server.py로 서버를 실행했는지 확인해주세요.";
+const SELECT_LESSON_FIRST_MESSAGE = "먼저 lesson을 선택해주세요.";
+const LESSON_SELECTED_PYTHON_MESSAGE =
+  "새 lesson을 불러왔어요. 변환하기를 누르면 Python 코드가 여기에 보여요.";
+const LESSON_SELECTED_RUN_MESSAGE = "실행하기를 누르면 결과가 여기에 보여요.";
+const LESSON_RESET_MESSAGE =
+  "예제 코드를 다시 불러왔어요. 변환하기 또는 실행하기로 다시 확인해보세요.";
 
 const lessonList = document.querySelector("#lessonList");
 const lessonDescription = document.querySelector("#lessonDescription");
@@ -18,6 +25,7 @@ const pythonOutput = document.querySelector("#pythonOutput");
 const runOutput = document.querySelector("#runOutput");
 const convertButton = document.querySelector("#convertButton");
 const runButton = document.querySelector("#runButton");
+const resetLessonButton = document.querySelector("#resetLessonButton");
 
 function setNotice(target, message) {
   target.classList.add("notice");
@@ -78,6 +86,7 @@ async function postSourceToApi(endpoint, source) {
 }
 
 function showLessonLoadError() {
+  selectedLessonId = null;
   lessonList.innerHTML = "";
   lessonDescription.textContent = LESSON_LOAD_ERROR_MESSAGE;
   koreanCode.value = "";
@@ -92,6 +101,14 @@ function showLessonLoadError() {
 
 function getLessonSummary(lesson) {
   return (lesson.description || "").split(".")[0] + ".";
+}
+
+function getSelectedLesson() {
+  if (!selectedLessonId) {
+    return null;
+  }
+
+  return lessons.find((item) => item.id === selectedLessonId) || null;
 }
 
 async function loadLessons() {
@@ -124,16 +141,28 @@ function selectLesson(lessonId) {
     return;
   }
 
+  selectedLessonId = lesson.id;
   koreanCode.value = lesson.starter_code;
   lessonDescription.textContent = lesson.description;
-  clearNotice(pythonOutput);
-  clearNotice(runOutput);
-  pythonOutput.textContent = "";
-  runOutput.textContent = "";
+  setNotice(pythonOutput, LESSON_SELECTED_PYTHON_MESSAGE);
+  setNotice(runOutput, LESSON_SELECTED_RUN_MESSAGE);
 
   document.querySelectorAll(".lesson-item").forEach((button) => {
     button.classList.toggle("active", button.dataset.lessonId === lessonId);
   });
+}
+
+function resetSelectedLessonCode() {
+  const lesson = getSelectedLesson();
+  if (!lesson) {
+    setNotice(pythonOutput, SELECT_LESSON_FIRST_MESSAGE);
+    setNotice(runOutput, SELECT_LESSON_FIRST_MESSAGE);
+    return;
+  }
+
+  koreanCode.value = lesson.starter_code;
+  setNotice(pythonOutput, LESSON_RESET_MESSAGE);
+  setNotice(runOutput, LESSON_SELECTED_RUN_MESSAGE);
 }
 
 function renderLessons() {
@@ -211,6 +240,8 @@ async function handleRunClick() {
 convertButton.addEventListener("click", handleConvertClick);
 
 runButton.addEventListener("click", handleRunClick);
+
+resetLessonButton.addEventListener("click", resetSelectedLessonCode);
 
 void REQUIRED_LESSON_FIELDS;
 void LEGACY_STATIC_TEST_MESSAGES;

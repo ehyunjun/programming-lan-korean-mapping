@@ -30,11 +30,17 @@
         </aside>
 
         <section class="editor-panel" aria-label="한글 코드 입력">
+          <div class="learning-guide" aria-label="학습 순서 안내">
+            <p>1단계: 왼쪽에서 학습할 예제를 고릅니다.</p>
+            <p>2단계: 한글 코드를 읽거나 직접 고쳐봅니다.</p>
+            <p>3단계: 변환하기 또는 실행하기 버튼을 눌러 결과를 확인합니다.</p>
+          </div>
           <div class="panel-heading">
             <h2>한글 코드</h2>
             <div class="actions">
               <button id="convertButton" type="button">변환하기</button>
               <button id="runButton" type="button">실행하기</button>
+              <button id="resetLessonButton" type="button">예제 코드 다시 불러오기</button>
             </div>
           </div>
           <textarea id="koreanCode" spellcheck="false"></textarea>
