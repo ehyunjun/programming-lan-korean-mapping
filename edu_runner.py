@@ -3,12 +3,20 @@
 # 변환된 Python 코드 문자열을 실행하고 결과를 반환하는 실행 헬퍼.
 # edu_api.py는 변환 전용으로 유지하고, 실행 책임은 이 파일에서 맡는다.
 
-import io
 import ast
+import io
+import multiprocessing
+import queue
 from contextlib import redirect_stdout
 
 
-def run_python_code(python_code: str) -> tuple[bool, str]:
+DEFAULT_TIMEOUT_SECONDS = 3.0
+
+
+def run_python_code(
+    python_code: str,
+    timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+) -> tuple[bool, str]:
     """
     변환된 Python 코드를 실행하고 출력 결과를 문자열로 반환한다.
 
@@ -18,12 +26,56 @@ def run_python_code(python_code: str) -> tuple[bool, str]:
     실패하면:
         (False, 오류 메시지)
     """
-    output = io.StringIO()
-
     try:
         if contains_input_call(python_code):
             return False, make_input_not_supported_message()
 
+        return run_python_code_in_subprocess(python_code, timeout_seconds)
+
+    except Exception as e:
+        return False, make_runtime_error_message(e)
+
+
+def run_python_code_in_subprocess(
+    python_code: str,
+    timeout_seconds: float,
+) -> tuple[bool, str]:
+    """제한 시간을 두고 별도 프로세스에서 Python 코드를 실행한다."""
+    result_queue = multiprocessing.Queue()
+    process = multiprocessing.Process(
+        target=run_python_code_worker,
+        args=(python_code, result_queue),
+    )
+
+    process.start()
+    process.join(timeout_seconds)
+
+    if process.is_alive():
+        process.terminate()
+        process.join()
+        return False, make_timeout_error_message()
+
+    try:
+        return result_queue.get_nowait()
+    except queue.Empty:
+        return False, make_runtime_error_message(
+            RuntimeError("실행 결과를 받을 수 없습니다.")
+        )
+
+
+def run_python_code_worker(
+    python_code: str,
+    result_queue: multiprocessing.Queue,
+) -> None:
+    """별도 프로세스에서 실행 결과를 queue로 전달한다."""
+    result_queue.put(execute_python_code(python_code))
+
+
+def execute_python_code(python_code: str) -> tuple[bool, str]:
+    """변환된 Python 코드를 실제로 실행한다."""
+    output = io.StringIO()
+
+    try:
         env = {}
 
         with redirect_stdout(output):
@@ -68,6 +120,23 @@ def make_input_not_supported_message() -> str:
         "예시:\n"
         "이름 = \"현준\"\n"
         "출력(이름)"
+    )
+
+
+def make_timeout_error_message() -> str:
+    """실행 시간이 너무 오래 걸릴 때 보여줄 안내 메시지."""
+    return (
+        "문제: 코드 실행 시간이 너무 오래 걸려서 멈췄어요.\n"
+        "\n"
+        "이유: 반복문이 끝나지 않거나, 너무 많은 일을 하고 있을 수 있어요.\n"
+        "\n"
+        "해결: 반복문 조건이 언젠가 거짓이 되는지 확인해보세요.\n"
+        "\n"
+        "예시:\n"
+        "i = 1\n"
+        "동안 i <= 5:\n"
+        "    출력(i)\n"
+        "    i = i + 1"
     )
 
 

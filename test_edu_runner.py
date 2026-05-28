@@ -52,11 +52,15 @@ def check_runtime_error_contains(
     title: str,
     python_code: str,
     expected_texts: list[str],
+    timeout_seconds: float | None = None,
 ) -> None:
     """실행 실패 메시지에 필요한 문구들이 모두 들어 있는지 확인한다."""
     print(f"[runner 오류 테스트] {title}")
 
-    ok, output = run_python_code(python_code)
+    if timeout_seconds is None:
+        ok, output = run_python_code(python_code)
+    else:
+        ok, output = run_python_code(python_code, timeout_seconds=timeout_seconds)
 
     if ok:
         print("원래는 실패해야 하는데 성공했습니다.")
@@ -106,6 +110,18 @@ def run_tests() -> None:
             "웹 실행",
             "변수에 값을 직접 넣어보세요",
         ],
+    )
+
+    check_runtime_error_contains(
+        "무한 반복 timeout",
+        "while True:\n    pass",
+        [
+            "실행 시간이 너무 오래",
+            "반복문",
+            "조건",
+            "거짓",
+        ],
+        timeout_seconds=0.5,
     )
 
 
