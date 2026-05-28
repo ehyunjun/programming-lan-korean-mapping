@@ -35,6 +35,12 @@ REQUIRED_MAIN_JS_TEXTS = [
     "answer_code:",
     "koreanCode.value = lesson.starter_code",
     "lessonDescription.textContent = lesson.description",
+    'postSourceToApi("/api/compile", source)',
+    'postSourceToApi("/api/run", source)',
+    'method: "POST"',
+    "JSON.stringify({ source })",
+    "API 서버에 연결할 수 없습니다. py api_server.py로 서버를 실행했는지 확인해주세요.",
+    "한글 코드를 먼저 입력해주세요.",
     "아직 변환 API가 연결되지 않았습니다.",
     "아직 실행 API가 연결되지 않았습니다.",
 ]
