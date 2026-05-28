@@ -90,8 +90,26 @@ programming-lan-korean-mapping/
 ├── edu_api.py
 ├── edu_runner.py
 ├── edu_cli.py
+├── api_server.py
+├── lessons/
+│   └── lessons.json
+├── examples/
+│   └── *.han
 ├── web/
+│   ├── index.html
+│   ├── style.css
+│   └── main.js
+├── .github/
+│   └── workflows/
+│       └── test.yml
 ├── test_all.py
+├── test_lesson.py
+├── test_edu_error.py
+├── test_edu_runner.py
+├── test_edu_cli.py
+├── test_examples.py
+├── test_api_server.py
+├── test_web_static.py
 └── edu_scope_v1.md
 ```
 
@@ -150,15 +168,20 @@ Python 코드
 | `edu_api.py` | 한글 코드를 Python 코드로 변환하는 변환 전용 API |
 | `edu_runner.py` | 변환된 Python 코드를 실행하고 출력/오류 메시지 반환 |
 | `edu_cli.py` | CLI 입력/출력 담당, `edu_api.py`와 `edu_runner.py`를 조합 |
-| `web/index.html` | 브라우저에서 바로 열어볼 수 있는 웹 IDE 첫 화면 |
+| `api_server.py` | 로컬 웹 IDE와 API를 제공하는 `http.server` 기반 서버 |
+| `lessons/lessons.json` | 웹 IDE에서 불러올 lesson 목록과 starter code |
+| `examples/` | edu-v1 문법 예제와 오류 예제 |
+| `web/index.html` | 로컬 서버에서 열어보는 웹 IDE 첫 화면 |
 | `web/style.css` | 웹 IDE 첫 화면 스타일 |
-| `web/main.js` | lesson 샘플 표시와 임시 버튼 동작 |
+| `web/main.js` | lesson 목록 표시, starter code 입력, `/api/compile`, `/api/run` 호출 |
 | `test_lesson.py` | lessons/lessons.json 데이터 검증 |
 | `test_edu_error.py` | 입문자 친화 오류 메시지 검증 |
 | `test_edu_runner.py` | Python 실행 헬퍼 검증 |
 | `test_edu_cli.py` | edu_cli.py example.han 실행 흐름 검증 |
 | `test_examples.py` | examples/*.han 예제 검증 |
+| `test_api_server.py` | `/web/`, `/lessons/lessons.json`, `/api/compile`, `/api/run` 검증 |
 | `test_web_static.py` | web/ 정적 파일 구조 검증 |
+| `.github/workflows/test.yml` | push/pull_request 때 `py test_all.py` 자동 실행 |
 | `test_all.py` | 전체 테스트 실행 |
 
 ---
@@ -202,12 +225,12 @@ py edu_cli.py example.han
 
 `edu_cli.py`는 한글 코드 파일을 읽고, 변환된 Python 코드와 실행 결과를 함께 보여줍니다.
 
-### 웹 첫 화면 열기
+### 로컬 웹 IDE 실행
 
-프로젝트 루트에서 로컬 정적 서버를 실행합니다.
+프로젝트 루트에서 로컬 API 서버를 실행합니다.
 
 ```bash
-py -m http.server 8000
+py api_server.py
 ```
 
 브라우저에서 아래 주소로 접속합니다.
@@ -218,8 +241,8 @@ http://localhost:8000/web/
 
 확인이 끝나면 서버를 실행한 터미널에서 `Ctrl + C`로 종료합니다.
 
-`web/index.html`을 더블클릭해서 `file://`로 열면 브라우저 보안 정책 때문에 `lessons/lessons.json`을 불러오지 못할 수 있습니다.  
-현재는 실제 변환/실행 API가 연결되지 않았고, `변환하기`와 `실행하기` 버튼은 임시 안내 메시지만 보여줍니다.
+`web/index.html`을 더블클릭해서 `file://`로 직접 열면 브라우저 보안 정책 때문에 `lessons/lessons.json` 또는 API 호출이 정상 동작하지 않을 수 있습니다.  
+반드시 `py api_server.py`로 서버를 실행한 뒤 `http://localhost:8000/web/`로 접속합니다.
 
 ### 전체 테스트 실행
 
@@ -265,7 +288,34 @@ py test_web_static.py
 
 `web/` 정적 파일 구조를 검증합니다.
 
+```bash
+py test_api_server.py
+```
+
+`api_server.py`가 `/web/`, `/lessons/lessons.json`, `/api/compile`, `/api/run` 요청을 올바르게 처리하는지 검사합니다.
+
 모든 검사를 한 번에 확인할 때는 `py test_all.py`를 사용하면 됩니다.
+
+---
+
+## 로컬 웹 API
+
+`api_server.py`를 실행하면 웹 IDE와 아래 API를 함께 사용할 수 있습니다.
+
+| 메서드 | 경로 | 역할 |
+|---|---|---|
+| GET | `/web/` | 웹 IDE 화면 제공 |
+| GET | `/lessons/lessons.json` | 학습 lesson 목록 제공 |
+| POST | `/api/compile` | 한글 코드를 Python 코드로 변환 |
+| POST | `/api/run` | 한글 코드를 변환한 뒤 실행 결과 반환 |
+
+`POST /api/compile`, `POST /api/run` 요청 본문은 아래처럼 보냅니다.
+
+```json
+{
+  "source": "출력(\"안녕\")"
+}
+```
 
 ---
 
@@ -298,34 +348,35 @@ for i in range(1, 6):
 
 ---
 
-## run_korean.py와 edu_api.py의 차이
+## run_korean.py, edu_api.py, edu_runner.py, edu_cli.py, api_server.py의 차이
 
 기존 `run_korean.py`는 변환된 Python 코드를 바로 실행하는 실험용 파일입니다.
 
-하지만 웹 IDE에서는 사용자가 입력한 코드를 서버에서 바로 실행하면 위험할 수 있습니다.  
-그래서 `edu-v1`에서는 변환과 실행 책임을 나누어 둡니다.
+현재 `edu-v1`에서는 변환, 실행, CLI, 웹 API 책임을 나누어 둡니다.
 
 ```text
 run_korean.py
-→ CLI 실험용 실행 파일
+→ 기존 실험용 실행 파일
 
 edu_api.py
-→ 웹 IDE에서 사용할 변환 전용 API
-→ 직접 exec 실행하지 않음
+→ 한글 코드 → Python 코드 변환 전용
 
 edu_runner.py
-→ 변환된 Python 코드를 실행하고 stdout 또는 실행 오류 메시지 반환
+→ 변환된 Python 코드 실행 및 결과 반환
 
 edu_cli.py
-→ 파일 읽기, 화면 출력, 변환/실행 결과 표시
+→ 터미널에서 파일 단위로 변환/실행 흐름 확인
+
+api_server.py
+→ 브라우저 웹 IDE와 연결되는 로컬 API 서버
 ```
 
-웹 버전에서는 다음과 같은 방향을 목표로 합니다.
+웹 IDE에서는 다음과 같은 흐름으로 동작합니다.
 
 ```text
 한글 코드 입력
 → Python 코드로 변환
-→ 브라우저 실행 환경에서 실행
+→ 로컬 API 서버에서 실행
 → 결과 출력
 ```
 
@@ -413,19 +464,24 @@ if 점수 >= 60:
 
 ## 현재 상태
 
-현재 `edu-v1`은 웹 IDE로 가기 전 단계입니다.
+현재 `edu-v1`은 로컬 웹 IDE에서 lesson을 불러오고, 한글 코드를 변환/실행 API로 확인할 수 있는 단계입니다.
 
 ```text
 현재 완료 목표:
 - 한글 코드 파싱
 - Python 코드 생성
 - edu-v1 학습 범위 검사
-- 기본 테스트 구성
+- CLI 실행 흐름
+- 로컬 API 서버
+- 웹 IDE에서 lesson 목록 표시
+- 웹 IDE에서 변환/실행 API 호출
+- GitHub Actions 자동 테스트
 
 다음 목표:
-- CLI 학습 실행 파일
-- 웹 IDE 프로토타입
-- 한글/영어 코드 스위칭
+- 웹 UI 개선
+- lesson 학습 화면 개선
+- 입문자용 힌트/설명 강화
+- 더 많은 예제 lesson 추가
 ```
 
 ---
