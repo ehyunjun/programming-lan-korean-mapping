@@ -121,18 +121,94 @@ def run_tests() -> None:
     )
 
     check_translation(
+        "문자열 안 키워드와 값 유지",
+        """
+        print("if print True None")
+        """,
+        """
+        출력("if print True None")
+        """,
+    )
+
+    check_translation(
+        "주석 안 단어 유지",
+        """
+        # print는 출력입니다
+        print("안녕")
+        """,
+        """
+        # print는 출력입니다
+        출력("안녕")
+        """,
+    )
+
+    check_translation(
         "True False None 변환",
         """
         done = True
+        failed = False
         empty = None
         print(done)
+        print(failed)
         print(empty)
         """,
         """
         done = 참
+        failed = 거짓
         empty = 없음
         출력(done)
+        출력(failed)
         출력(empty)
+        """,
+    )
+
+    check_translation(
+        "if elif else 변환",
+        """
+        score = 85
+        if score >= 90:
+            print("A")
+        elif score >= 80:
+            print("B")
+        else:
+            print("C")
+        """,
+        """
+        score = 85
+        만약 score >= 90:
+            출력("A")
+        아니면 score >= 80:
+            출력("B")
+        그외:
+            출력("C")
+        """,
+    )
+
+    check_translation(
+        "while 변환",
+        """
+        count = 0
+        while count < 3:
+            print(count)
+            count = count + 1
+        """,
+        """
+        count = 0
+        동안 count < 3:
+            출력(count)
+            count = count + 1
+        """,
+    )
+
+    check_translation(
+        "한글 변수명 유지",
+        """
+        이름 = "현준"
+        print(이름)
+        """,
+        """
+        이름 = "현준"
+        출력(이름)
         """,
     )
 
