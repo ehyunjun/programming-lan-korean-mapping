@@ -110,6 +110,41 @@ textarea {
   line-height: 1.45;
 }
 
+.quiz-panel {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #f9fbfc;
+  display: grid;
+  gap: 6px;
+}
+
+.quiz-panel h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.quiz-title,
+.quiz-question,
+.quiz-hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.quiz-title {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.quiz-question {
+  color: var(--text);
+}
+
+.quiz-hint {
+  color: var(--muted);
+}
+
 .panel-heading {
   min-height: 58px;
   padding: 14px 16px;
@@ -130,6 +165,11 @@ textarea {
   padding: 10px;
   display: grid;
   gap: 8px;
+}
+
+.lesson-block {
+  display: grid;
+  gap: 6px;
 }
 
 .lesson-item {
@@ -167,6 +207,40 @@ textarea {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
+}
+
+.quiz-list {
+  margin-left: 12px;
+  padding-left: 10px;
+  border-left: 2px solid var(--accent-soft);
+  display: grid;
+  gap: 6px;
+}
+
+.quiz-button {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--muted);
+  padding: 9px 10px;
+  text-align: left;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.quiz-button:hover,
+.quiz-button:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+  outline: none;
+}
+
+.quiz-button.selected-quiz {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-weight: 700;
 }
 
 .actions {

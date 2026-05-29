@@ -25,6 +25,14 @@ REQUIRED_FIELDS = [
     "python_keywords",
     "related_example",
 ]
+QUIZ_REQUIRED_FIELDS = [
+    "id",
+    "title",
+    "question",
+    "starter_code",
+    "answer_code",
+    "hint",
+]
 
 
 class LessonTestError(Exception):
@@ -61,6 +69,16 @@ def lesson_label(index: int, lesson: Any) -> str:
     else:
         lesson_id = "(id 없음)"
     return f"{index + 1}번째 lesson(id: {lesson_id})"
+
+
+def quiz_label(index: int, lesson: dict[str, Any], quiz_index: int, quiz: Any) -> str:
+    """오류 메시지에서 quiz 위치를 읽기 쉽게 표시한다."""
+    if isinstance(quiz, dict):
+        quiz_id = quiz.get("id", "(id 없음)")
+    else:
+        quiz_id = "(id 없음)"
+
+    return f"{lesson_label(index, lesson)}, {quiz_index + 1}번째 quiz(id: {quiz_id})"
 
 
 def validate_required_fields(index: int, lesson: Any) -> None:
@@ -150,12 +168,112 @@ def validate_code_compiles(index: int, lesson: dict[str, Any], field_name: str) 
         )
 
 
+def validate_quiz_code_compiles(
+    index: int,
+    lesson: dict[str, Any],
+    quiz_index: int,
+    quiz: dict[str, Any],
+    field_name: str,
+    *,
+    allow_empty: bool = False,
+) -> None:
+    """quiz의 starter_code 또는 answer_code가 한글 Python 코드로 컴파일되는지 검사한다."""
+    code = quiz.get(field_name)
+    label = quiz_label(index, lesson, quiz_index, quiz)
+
+    if not isinstance(code, str):
+        raise LessonTestError(
+            f"{label}의 {field_name} 값이 문자열이 아닙니다.\n"
+            "해결: 퀴즈 코드는 따옴표로 감싼 문자열로 적어주세요."
+        )
+
+    if not code.strip():
+        if allow_empty:
+            return
+
+        raise LessonTestError(
+            f"{label}의 {field_name} 코드가 비어 있습니다.\n"
+            "해결: answer_code에는 실행해볼 수 있는 한글 코드를 넣어주세요."
+        )
+
+    result = compile_korean_to_python(code)
+    if not result.ok:
+        raise LessonTestError(
+            f"{label}의 {field_name} 코드를 컴파일할 수 없습니다.\n"
+            "해결: quizzes 안의 코드를 확인하고, edu-v1 문법 오류를 고쳐주세요.\n\n"
+            f"컴파일 오류:\n{result.error}"
+        )
+
+
+def validate_quizzes(index: int, lesson: dict[str, Any]) -> None:
+    """lesson에 연결된 quiz 목록이 웹 IDE에서 사용할 수 있는 형태인지 검사한다."""
+    label = lesson_label(index, lesson)
+    quizzes = lesson.get("quizzes")
+
+    if not isinstance(quizzes, list):
+        raise LessonTestError(
+            f"{label}의 quizzes 값이 배열이 아닙니다.\n"
+            "해결: quizzes는 [ ... ] 형태의 JSON 배열로 적어주세요."
+        )
+
+    if not quizzes:
+        raise LessonTestError(
+            f"{label}의 quizzes가 비어 있습니다.\n"
+            "해결: 각 lesson마다 최소 1개 이상의 quiz를 추가해주세요."
+        )
+
+    for quiz_index, quiz in enumerate(quizzes):
+        current_label = quiz_label(index, lesson, quiz_index, quiz)
+
+        if not isinstance(quiz, dict):
+            raise LessonTestError(
+                f"{current_label} 데이터가 올바르지 않습니다.\n"
+                "해결: 각 quiz는 { ... } 형태의 JSON 객체여야 합니다."
+            )
+
+        missing_fields = [
+            field for field in QUIZ_REQUIRED_FIELDS
+            if field not in quiz
+        ]
+        if missing_fields:
+            raise LessonTestError(
+                f"{current_label}의 필수 필드가 빠져 있습니다.\n"
+                f"빠진 필드: {', '.join(missing_fields)}\n"
+                "해결: id, title, question, starter_code, answer_code, hint를 모두 넣어주세요."
+            )
+
+        for field_name in ("id", "title", "question", "answer_code", "hint"):
+            value = quiz.get(field_name)
+            if not isinstance(value, str) or not value.strip():
+                raise LessonTestError(
+                    f"{current_label}의 {field_name} 값이 비어 있습니다.\n"
+                    "해결: 입문자가 읽을 수 있는 내용을 문자열로 적어주세요."
+                )
+
+        validate_quiz_code_compiles(
+            index,
+            lesson,
+            quiz_index,
+            quiz,
+            "starter_code",
+            allow_empty=True,
+        )
+        validate_quiz_code_compiles(
+            index,
+            lesson,
+            quiz_index,
+            quiz,
+            "answer_code",
+        )
+
+
 def validate_lesson(index: int, lesson: Any) -> None:
     """lesson 하나에 필요한 검사를 모두 수행한다."""
     validate_required_fields(index, lesson)
     validate_related_example(index, lesson)
     validate_code_compiles(index, lesson, "starter_code")
     validate_code_compiles(index, lesson, "answer_code")
+    validate_quizzes(index, lesson)
 
 
 def run_tests() -> None:

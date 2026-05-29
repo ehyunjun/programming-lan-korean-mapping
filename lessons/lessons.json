@@ -11,7 +11,25 @@
     "hint": "출력하고 싶은 글자는 따옴표 안에 적고, 출력(...) 괄호 안에 넣으면 됩니다.",
     "korean_keywords": ["출력"],
     "python_keywords": ["print"],
-    "related_example": "examples/01_print.han"
+    "related_example": "examples/01_print.han",
+    "quizzes": [
+      {
+        "id": "1.1",
+        "title": "퀴즈 1.1",
+        "question": "화면에 안녕하세요를 출력해보세요.",
+        "starter_code": "",
+        "answer_code": "출력(\"안녕하세요\")",
+        "hint": "출력() 안에 보여주고 싶은 글자를 넣으면 됩니다."
+      },
+      {
+        "id": "1.2",
+        "title": "퀴즈 1.2",
+        "question": "출력()을 두 번 사용해서 두 줄로 자기소개 문장을 출력해보세요.",
+        "starter_code": "출력(\"이름:\")\n출력(\"\")",
+        "answer_code": "출력(\"이름: 현준\")\n출력(\"한글 파이썬을 배우는 중입니다\")",
+        "hint": "출력()을 여러 번 쓰면 여러 줄을 차례대로 보여줄 수 있습니다."
+      }
+    ]
   },
   {
     "id": "02_variable",
@@ -25,7 +43,25 @@
     "hint": "왼쪽에는 변수 이름을 쓰고, 오른쪽에는 저장할 값을 씁니다. 예: 이름 = \"현준\"",
     "korean_keywords": ["출력"],
     "python_keywords": ["variable", "print"],
-    "related_example": "examples/02_variable.han"
+    "related_example": "examples/02_variable.han",
+    "quizzes": [
+      {
+        "id": "2.1",
+        "title": "퀴즈 2.1",
+        "question": "이름 변수에 문자열을 넣고 출력해보세요.",
+        "starter_code": "이름 = \"\"\n출력(이름)",
+        "answer_code": "이름 = \"현준\"\n출력(이름)",
+        "hint": "변수 이름 왼쪽에 값을 넣고, 출력() 안에 변수 이름을 넣어보세요."
+      },
+      {
+        "id": "2.2",
+        "title": "퀴즈 2.2",
+        "question": "나이 변수에 숫자를 넣고 출력해보세요.",
+        "starter_code": "나이 = 0\n출력(나이)",
+        "answer_code": "나이 = 26\n출력(나이)",
+        "hint": "숫자는 따옴표 없이 변수에 넣을 수 있습니다."
+      }
+    ]
   },
   {
     "id": "03_if",
@@ -39,7 +75,25 @@
     "hint": "조건문을 쓸 때는 조건 뒤에 콜론(:)을 붙이고, 실행할 코드는 들여쓰기해야 합니다.",
     "korean_keywords": ["만약", "그외", "출력"],
     "python_keywords": ["if", "else", "print"],
-    "related_example": "examples/03_if.han"
+    "related_example": "examples/03_if.han",
+    "quizzes": [
+      {
+        "id": "3.1",
+        "title": "퀴즈 3.1",
+        "question": "점수가 60 이상이면 합격, 아니면 불합격을 출력해보세요.",
+        "starter_code": "점수 = 75\n\n만약 점수 >= 60:\n    출력(\"\")\n그외:\n    출력(\"\")",
+        "answer_code": "점수 = 75\n\n만약 점수 >= 60:\n    출력(\"합격\")\n그외:\n    출력(\"불합격\")",
+        "hint": "만약 조건 뒤에는 콜론(:)을 붙이고, 안쪽 코드는 4칸 들여써주세요."
+      },
+      {
+        "id": "3.2",
+        "title": "퀴즈 3.2",
+        "question": "나이가 20 이상이면 성인, 아니면 미성년자를 출력해보세요.",
+        "starter_code": "나이 = 17\n\n만약 나이 >= 20:\n    출력(\"성인\")\n그외:\n    출력(\"\")",
+        "answer_code": "나이 = 17\n\n만약 나이 >= 20:\n    출력(\"성인\")\n그외:\n    출력(\"미성년자\")",
+        "hint": "조건이 맞지 않을 때 실행할 코드는 그외: 아래에 적습니다."
+      }
+    ]
   },
   {
     "id": "04_for_range",
@@ -53,7 +107,25 @@
     "hint": "범위(1, 6)은 1부터 5까지의 숫자를 만들어줍니다. 마지막 숫자 6은 포함되지 않습니다.",
     "korean_keywords": ["반복", "안에", "범위", "출력"],
     "python_keywords": ["for", "in", "range", "print"],
-    "related_example": "examples/04_for_range.han"
+    "related_example": "examples/04_for_range.han",
+    "quizzes": [
+      {
+        "id": "4.1",
+        "title": "퀴즈 4.1",
+        "question": "1부터 5까지 숫자를 차례대로 출력해보세요.",
+        "starter_code": "반복 i 안에 범위(1, 6):\n    출력(i)",
+        "answer_code": "반복 i 안에 범위(1, 6):\n    출력(i)",
+        "hint": "범위(1, 6)은 1, 2, 3, 4, 5를 만들어줍니다."
+      },
+      {
+        "id": "4.2",
+        "title": "퀴즈 4.2",
+        "question": "같은 문장을 세 번 출력해보세요.",
+        "starter_code": "반복 i 안에 범위(1, 4):\n    출력(\"\")",
+        "answer_code": "반복 i 안에 범위(1, 4):\n    출력(\"연습 중\")",
+        "hint": "반복 안쪽에 있는 출력()이 반복 횟수만큼 실행됩니다."
+      }
+    ]
   },
   {
     "id": "05_while",
@@ -67,7 +139,25 @@
     "hint": "동안 반복문 안에서 i = i + 1을 해주지 않으면 i 값이 바뀌지 않아서 반복이 끝나지 않을 수 있습니다.",
     "korean_keywords": ["동안", "출력"],
     "python_keywords": ["while", "print"],
-    "related_example": "examples/05_while.han"
+    "related_example": "examples/05_while.han",
+    "quizzes": [
+      {
+        "id": "5.1",
+        "title": "퀴즈 5.1",
+        "question": "count가 3보다 작을 동안 count를 출력해보세요.",
+        "starter_code": "count = 0\n\n동안 count < 3:\n    출력(count)\n    count = count + 1",
+        "answer_code": "count = 0\n\n동안 count < 3:\n    출력(count)\n    count = count + 1",
+        "hint": "반복이 끝나려면 동안 안에서 count 값을 바꿔야 합니다."
+      },
+      {
+        "id": "5.2",
+        "title": "퀴즈 5.2",
+        "question": "i가 1부터 3까지 변하는 동안 같은 문장을 출력해보세요.",
+        "starter_code": "i = 1\n\n동안 i <= 3:\n    출력(\"\")\n    i = i + 1",
+        "answer_code": "i = 1\n\n동안 i <= 3:\n    출력(\"반복\")\n    i = i + 1",
+        "hint": "i = i + 1이 있어야 조건이 언젠가 거짓이 됩니다."
+      }
+    ]
   },
   {
     "id": "06_function",
@@ -81,7 +171,25 @@
     "hint": "함수를 만들 때는 정의 함수이름(매개변수): 형태로 쓰고, 함수 안의 코드는 들여쓰기합니다.",
     "korean_keywords": ["정의", "출력"],
     "python_keywords": ["def", "print"],
-    "related_example": "examples/06_function.han"
+    "related_example": "examples/06_function.han",
+    "quizzes": [
+      {
+        "id": "6.1",
+        "title": "퀴즈 6.1",
+        "question": "인사하는 함수를 만들고 호출해보세요.",
+        "starter_code": "정의 인사하기():\n    출력(\"\")\n\n인사하기()",
+        "answer_code": "정의 인사하기():\n    출력(\"안녕하세요\")\n\n인사하기()",
+        "hint": "함수를 만든 뒤에는 함수 이름과 괄호를 써서 호출해야 실행됩니다."
+      },
+      {
+        "id": "6.2",
+        "title": "퀴즈 6.2",
+        "question": "문장을 받아 두 번 출력하는 함수를 만들어보세요.",
+        "starter_code": "정의 두번출력(문장):\n    출력(문장)\n    출력(문장)\n\n두번출력(\"연습\")",
+        "answer_code": "정의 두번출력(문장):\n    출력(문장)\n    출력(문장)\n\n두번출력(\"연습\")",
+        "hint": "매개변수로 받은 값은 함수 안에서 변수처럼 사용할 수 있습니다."
+      }
+    ]
   },
   {
     "id": "07_function_return",
@@ -95,7 +203,25 @@
     "hint": "반환은 함수 안에서만 사용할 수 있습니다. 함수 밖에서 반환을 쓰면 오류가 납니다.",
     "korean_keywords": ["정의", "반환", "출력"],
     "python_keywords": ["def", "return", "print"],
-    "related_example": "examples/07_function_return.han"
+    "related_example": "examples/07_function_return.han",
+    "quizzes": [
+      {
+        "id": "7.1",
+        "title": "퀴즈 7.1",
+        "question": "두 값을 더해서 반환하고 결과를 출력해보세요.",
+        "starter_code": "정의 더하기(a, b):\n    반환 a + b\n\n결과 = 더하기(1, 2)\n출력(결과)",
+        "answer_code": "정의 더하기(a, b):\n    반환 a + b\n\n결과 = 더하기(1, 2)\n출력(결과)",
+        "hint": "반환한 값은 변수에 담아서 다시 출력할 수 있습니다."
+      },
+      {
+        "id": "7.2",
+        "title": "퀴즈 7.2",
+        "question": "숫자를 두 배로 만들어 반환하는 함수를 만들어보세요.",
+        "starter_code": "정의 두배(x):\n    반환 x + x\n\n값 = 두배(4)\n출력(값)",
+        "answer_code": "정의 두배(x):\n    반환 x + x\n\n값 = 두배(4)\n출력(값)",
+        "hint": "반환 x + x처럼 계산식을 바로 반환할 수 있습니다."
+      }
+    ]
   },
   {
     "id": "08_list_index",
@@ -109,6 +235,24 @@
     "hint": "리스트의 첫 번째 값은 [0]으로 꺼냅니다. 두 번째 값은 [1]입니다.",
     "korean_keywords": ["출력"],
     "python_keywords": ["list", "index", "print"],
-    "related_example": "examples/08_list_index.han"
+    "related_example": "examples/08_list_index.han",
+    "quizzes": [
+      {
+        "id": "8.1",
+        "title": "퀴즈 8.1",
+        "question": "리스트의 첫 번째 값을 출력해보세요.",
+        "starter_code": "과일들 = [\"사과\", \"바나나\", \"포도\"]\n출력(과일들[0])",
+        "answer_code": "과일들 = [\"사과\", \"바나나\", \"포도\"]\n출력(과일들[0])",
+        "hint": "리스트의 첫 번째 값은 번호 0으로 꺼냅니다."
+      },
+      {
+        "id": "8.2",
+        "title": "퀴즈 8.2",
+        "question": "리스트의 두 번째 값을 출력해보세요.",
+        "starter_code": "숫자들 = [10, 20, 30]\n출력(숫자들[1])",
+        "answer_code": "숫자들 = [10, 20, 30]\n출력(숫자들[1])",
+        "hint": "두 번째 값은 [1]로 꺼냅니다."
+      }
+    ]
   }
 ]

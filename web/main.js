@@ -1,5 +1,6 @@
 let lessons = [];
 let selectedLessonId = null;
+let selectedQuizId = null;
 
 const REQUIRED_LESSON_FIELDS = ["id:", "title:", "description:", "starter_code:", "answer_code:"];
 const LEGACY_STATIC_TEST_MESSAGES = [
@@ -50,11 +51,17 @@ const LESSON_SELECTED_PYTHON_MESSAGE =
 const LESSON_SELECTED_RUN_MESSAGE = "실행하기를 누르면 결과가 여기에 보여요.";
 const LESSON_RESET_MESSAGE =
   "예제 코드를 다시 불러왔어요. 자동 변환하기 또는 실행하기로 다시 확인해보세요.";
+const QUIZ_EMPTY_MESSAGE = "lesson을 선택한 뒤 퀴즈를 골라보세요.";
+const QUIZ_SELECTED_MESSAGE =
+  "퀴즈를 불러왔어요. 자동 변환하기 또는 실행하기로 확인해보세요.";
 
 const lessonList = document.querySelector("#lessonList");
 const lessonDescription = document.querySelector("#lessonDescription");
 const koreanCode = document.querySelector("#koreanCode");
 const codePreview = document.querySelector("#codePreview");
+const quizTitle = document.querySelector("#quizTitle");
+const quizQuestion = document.querySelector("#quizQuestion");
+const quizHint = document.querySelector("#quizHint");
 const pythonOutput = document.querySelector("#pythonOutput");
 const runOutput = document.querySelector("#runOutput");
 const convertButton = document.querySelector("#convertButton");
@@ -254,11 +261,13 @@ async function postSourceToApi(endpoint, source) {
 
 function showLessonLoadError() {
   selectedLessonId = null;
+  selectedQuizId = null;
   lessonList.innerHTML = "";
   lessonDescription.textContent = LESSON_LOAD_ERROR_MESSAGE;
   koreanCode.value = "";
   pythonOutput.textContent = "";
   runOutput.textContent = "";
+  resetQuizPanel();
   updateCodePreview();
 
   const message = document.createElement("div");
@@ -277,6 +286,52 @@ function getSelectedLesson() {
   }
 
   return lessons.find((item) => item.id === selectedLessonId) || null;
+}
+
+function getSelectedQuiz(lesson) {
+  if (!lesson || !selectedQuizId || !Array.isArray(lesson.quizzes)) {
+    return null;
+  }
+
+  return lesson.quizzes.find((quiz) => quiz.id === selectedQuizId) || null;
+}
+
+function resetQuizPanel() {
+  quizTitle.textContent = QUIZ_EMPTY_MESSAGE;
+  quizQuestion.textContent = "";
+  quizHint.textContent = "";
+}
+
+function updateQuizPanel(quiz) {
+  if (!quiz) {
+    resetQuizPanel();
+    return;
+  }
+
+  quizTitle.textContent = quiz.title || "선택한 퀴즈";
+  quizQuestion.textContent = quiz.question || "";
+  quizHint.textContent = quiz.hint ? `힌트: ${quiz.hint}` : "";
+}
+
+function updateLessonSelectionStyles() {
+  document.querySelectorAll(".lesson-item").forEach((button) => {
+    button.classList.toggle(
+      "active",
+      button.dataset.lessonId === selectedLessonId
+    );
+  });
+
+  document.querySelectorAll(".quiz-button").forEach((button) => {
+    button.classList.toggle(
+      "selected-quiz",
+      button.dataset.lessonId === selectedLessonId &&
+        button.dataset.quizId === selectedQuizId
+    );
+  });
+
+  document.querySelectorAll(".quiz-list").forEach((list) => {
+    list.hidden = list.dataset.lessonId !== selectedLessonId;
+  });
 }
 
 function getSelectedLineBounds(text, selectionStart, selectionEnd) {
@@ -412,15 +467,36 @@ function selectLesson(lessonId) {
   }
 
   selectedLessonId = lesson.id;
+  selectedQuizId = null;
   koreanCode.value = lesson.starter_code;
   updateCodePreview();
   lessonDescription.textContent = lesson.description;
+  resetQuizPanel();
   setNotice(pythonOutput, LESSON_SELECTED_PYTHON_MESSAGE);
   setNotice(runOutput, LESSON_SELECTED_RUN_MESSAGE);
+  updateLessonSelectionStyles();
+}
 
-  document.querySelectorAll(".lesson-item").forEach((button) => {
-    button.classList.toggle("active", button.dataset.lessonId === lessonId);
-  });
+function selectQuiz(lessonId, quizId) {
+  const lesson = lessons.find((item) => item.id === lessonId);
+  if (!lesson || !Array.isArray(lesson.quizzes)) {
+    return;
+  }
+
+  const quiz = lesson.quizzes.find((item) => item.id === quizId);
+  if (!quiz) {
+    return;
+  }
+
+  selectedLessonId = lesson.id;
+  selectedQuizId = quiz.id;
+  koreanCode.value = quiz.starter_code || "";
+  updateCodePreview();
+  lessonDescription.textContent = lesson.description;
+  updateQuizPanel(quiz);
+  setNotice(pythonOutput, QUIZ_SELECTED_MESSAGE);
+  setNotice(runOutput, LESSON_SELECTED_RUN_MESSAGE);
+  updateLessonSelectionStyles();
 }
 
 function resetSelectedLessonCode() {
@@ -431,16 +507,43 @@ function resetSelectedLessonCode() {
     return;
   }
 
+  selectedQuizId = null;
   koreanCode.value = lesson.starter_code;
   updateCodePreview();
+  resetQuizPanel();
   setNotice(pythonOutput, LESSON_RESET_MESSAGE);
   setNotice(runOutput, LESSON_SELECTED_RUN_MESSAGE);
+  updateLessonSelectionStyles();
+}
+
+function renderLessonQuizzes(lesson) {
+  const quizList = document.createElement("div");
+  quizList.className = "quiz-list";
+  quizList.dataset.lessonId = lesson.id;
+  quizList.hidden = lesson.id !== selectedLessonId;
+
+  const quizzes = Array.isArray(lesson.quizzes) ? lesson.quizzes : [];
+  quizzes.forEach((quiz) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "quiz-button";
+    button.dataset.lessonId = lesson.id;
+    button.dataset.quizId = quiz.id;
+    button.textContent = quiz.title || `퀴즈 ${quiz.id}`;
+    button.addEventListener("click", () => selectQuiz(lesson.id, quiz.id));
+    quizList.appendChild(button);
+  });
+
+  return quizList;
 }
 
 function renderLessons() {
   lessonList.innerHTML = "";
 
   lessons.forEach((lesson) => {
+    const lessonBlock = document.createElement("div");
+    lessonBlock.className = "lesson-block";
+
     const button = document.createElement("button");
     button.type = "button";
     button.className = "lesson-item";
@@ -450,8 +553,12 @@ function renderLessons() {
       <span class="lesson-goal">${getLessonSummary(lesson)}</span>
     `;
     button.addEventListener("click", () => selectLesson(lesson.id));
-    lessonList.appendChild(button);
+    lessonBlock.appendChild(button);
+    lessonBlock.appendChild(renderLessonQuizzes(lesson));
+    lessonList.appendChild(lessonBlock);
   });
+
+  updateLessonSelectionStyles();
 }
 
 async function handleConvertClick() {
