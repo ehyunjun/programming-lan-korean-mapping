@@ -4,18 +4,19 @@
 # edu_api.py는 변환 전용으로 유지하고, 실행 책임은 이 파일에서 맡는다.
 
 import ast
-import io
 import multiprocessing
 import queue
 from contextlib import redirect_stdout
 
 
 DEFAULT_TIMEOUT_SECONDS = 3.0
+MAX_OUTPUT_CHARS = 4000
 
 
 def run_python_code(
     python_code: str,
     timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+    max_output_chars: int = MAX_OUTPUT_CHARS,
 ) -> tuple[bool, str]:
     """
     변환된 Python 코드를 실행하고 출력 결과를 문자열로 반환한다.
@@ -30,7 +31,11 @@ def run_python_code(
         if contains_input_call(python_code):
             return False, make_input_not_supported_message()
 
-        return run_python_code_in_subprocess(python_code, timeout_seconds)
+        return run_python_code_in_subprocess(
+            python_code,
+            timeout_seconds,
+            max_output_chars,
+        )
 
     except Exception as e:
         return False, make_runtime_error_message(e)
@@ -39,12 +44,13 @@ def run_python_code(
 def run_python_code_in_subprocess(
     python_code: str,
     timeout_seconds: float,
+    max_output_chars: int,
 ) -> tuple[bool, str]:
     """제한 시간을 두고 별도 프로세스에서 Python 코드를 실행한다."""
     result_queue = multiprocessing.Queue()
     process = multiprocessing.Process(
         target=run_python_code_worker,
-        args=(python_code, result_queue),
+        args=(python_code, max_output_chars, result_queue),
     )
 
     process.start()
@@ -65,15 +71,16 @@ def run_python_code_in_subprocess(
 
 def run_python_code_worker(
     python_code: str,
+    max_output_chars: int,
     result_queue: multiprocessing.Queue,
 ) -> None:
     """별도 프로세스에서 실행 결과를 queue로 전달한다."""
-    result_queue.put(execute_python_code(python_code))
+    result_queue.put(execute_python_code(python_code, max_output_chars))
 
 
-def execute_python_code(python_code: str) -> tuple[bool, str]:
+def execute_python_code(python_code: str, max_output_chars: int) -> tuple[bool, str]:
     """변환된 Python 코드를 실제로 실행한다."""
-    output = io.StringIO()
+    output = LimitedOutput(max_output_chars)
 
     try:
         env = {}
@@ -81,14 +88,60 @@ def execute_python_code(python_code: str) -> tuple[bool, str]:
         with redirect_stdout(output):
             exec(python_code, env, env)
 
-        result = output.getvalue()
-        if result.strip():
-            return True, result.rstrip()
-
-        return True, "(출력 없음)"
+        return make_success_output(output)
 
     except Exception as e:
         return False, make_runtime_error_message(e)
+
+
+class LimitedOutput:
+    """stdout 내용을 최대 글자 수까지만 저장하는 파일 비슷한 객체."""
+
+    def __init__(self, max_chars: int) -> None:
+        self.max_chars = max(0, max_chars)
+        self.parts: list[str] = []
+        self.char_count = 0
+        self.truncated = False
+
+    def write(self, text: str) -> int:
+        if not isinstance(text, str):
+            text = str(text)
+
+        text_len = len(text)
+        remaining = self.max_chars - self.char_count
+
+        if remaining > 0:
+            kept = text[:remaining]
+            self.parts.append(kept)
+            self.char_count += len(kept)
+
+        if text_len > max(0, remaining):
+            self.truncated = True
+
+        return text_len
+
+    def flush(self) -> None:
+        return None
+
+    def getvalue(self) -> str:
+        return "".join(self.parts)
+
+
+def make_success_output(output: LimitedOutput) -> tuple[bool, str]:
+    """실행 성공 시 출력 제한 상태를 반영해 결과를 만든다."""
+    result = output.getvalue()
+
+    if output.truncated:
+        shown_output = result.rstrip()
+        if shown_output:
+            return True, f"{shown_output}\n\n{make_output_truncated_message()}"
+
+        return True, make_output_truncated_message()
+
+    if result.strip():
+        return True, result.rstrip()
+
+    return True, "(출력 없음)"
 
 
 def contains_input_call(python_code: str) -> bool:
@@ -137,6 +190,14 @@ def make_timeout_error_message() -> str:
         "동안 i <= 5:\n"
         "    출력(i)\n"
         "    i = i + 1"
+    )
+
+
+def make_output_truncated_message() -> str:
+    """출력이 너무 길 때 보여줄 안내 메시지."""
+    return (
+        "출력이 너무 길어서 일부만 보여줬어요.\n"
+        "반복 횟수를 줄이거나 출력하는 내용을 줄여보세요."
     )
 
 

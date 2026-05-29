@@ -28,6 +28,44 @@ def check_success(title: str, python_code: str, expected_output: str) -> None:
     print()
 
 
+def check_truncated_output(
+    title: str,
+    python_code: str,
+    max_output_chars: int,
+    expected_kept_text: str,
+) -> None:
+    """출력이 너무 길 때 앞부분만 보여주고 안내 문구를 붙이는지 확인한다."""
+    print(f"[runner 출력 제한 테스트] {title}")
+
+    ok, output = run_python_code(python_code, max_output_chars=max_output_chars)
+
+    if not ok:
+        print("실패 이유:")
+        print(output)
+        raise AssertionError(f"{title} 테스트 실패")
+
+    print(output)
+    print()
+
+    if not output.startswith(expected_kept_text):
+        raise AssertionError(
+            f"{title} 테스트 실패: 출력 앞부분이 기대와 다릅니다.\n"
+            f"기대 시작: {expected_kept_text!r}\n"
+            f"실제 출력: {output!r}"
+        )
+
+    if output.count("가") != len(expected_kept_text):
+        raise AssertionError(
+            f"{title} 테스트 실패: 제한보다 많은 출력 본문이 남아 있습니다.\n"
+            f"실제 출력: {output!r}"
+        )
+
+    if "출력이 너무 길어서 일부만 보여줬어요" not in output:
+        raise AssertionError(
+            f"{title} 테스트 실패: 출력 제한 안내 문구를 찾지 못했습니다."
+        )
+
+
 def check_runtime_error(title: str, python_code: str, expected_text: str) -> None:
     """실행 중 오류가 사용자용 오류 메시지로 반환되는지 확인한다."""
     print(f"[runner 오류 테스트] {title}")
@@ -94,6 +132,13 @@ def run_tests() -> None:
         "문자열 안의 input 단어는 실행 허용",
         'print("input은 입력 함수입니다")',
         "input은 입력 함수입니다",
+    )
+
+    check_truncated_output(
+        "긴 출력 일부만 반환",
+        'print("가" * 100)',
+        max_output_chars=20,
+        expected_kept_text="가" * 20,
     )
 
     check_runtime_error(
