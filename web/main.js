@@ -13,10 +13,10 @@ const API_CONNECTION_ERROR_MESSAGE =
   "API 서버에 연결할 수 없습니다. py api_server.py로 서버를 실행했는지 확인해주세요.";
 const SELECT_LESSON_FIRST_MESSAGE = "먼저 lesson을 선택해주세요.";
 const LESSON_SELECTED_PYTHON_MESSAGE =
-  "새 lesson을 불러왔어요. 변환하기를 누르면 Python 코드가 여기에 보여요.";
+  "새 lesson을 불러왔어요. 자동 변환하기를 누르면 변환 결과가 여기에 보여요.";
 const LESSON_SELECTED_RUN_MESSAGE = "실행하기를 누르면 결과가 여기에 보여요.";
 const LESSON_RESET_MESSAGE =
-  "예제 코드를 다시 불러왔어요. 변환하기 또는 실행하기로 다시 확인해보세요.";
+  "예제 코드를 다시 불러왔어요. 자동 변환하기 또는 실행하기로 다시 확인해보세요.";
 
 const lessonList = document.querySelector("#lessonList");
 const lessonDescription = document.querySelector("#lessonDescription");
@@ -47,6 +47,30 @@ function getApiErrorMessage(data, fallbackMessage) {
   }
 
   return fallbackMessage;
+}
+
+function getTranslateDirectionMessage(direction) {
+  if (direction === "ko_to_py") {
+    return "변환 방향: 한글 코드 → Python 코드";
+  }
+
+  if (direction === "py_to_ko") {
+    return "변환 방향: Python 코드 → 한글 코드";
+  }
+
+  return "";
+}
+
+function getTranslateOutput(data) {
+  const translatedCode =
+    typeof data.translated_code === "string" ? data.translated_code : "";
+  const directionMessage = getTranslateDirectionMessage(data.direction);
+
+  if (!directionMessage) {
+    return translatedCode;
+  }
+
+  return `${directionMessage}\n\n${translatedCode}`;
 }
 
 async function postSourceToApi(endpoint, source) {
@@ -191,16 +215,16 @@ async function handleConvertClick() {
 
   try {
     setNotice(pythonOutput, "변환 중입니다...");
-    const data = await postSourceToApi("/api/compile", source);
+    const data = await postSourceToApi("/api/translate", source);
 
     if (data.ok) {
-      setOutput(pythonOutput, data.python_code || "");
+      setOutput(pythonOutput, getTranslateOutput(data));
       return;
     }
 
     setNotice(
       pythonOutput,
-      getApiErrorMessage(data, "변환에 실패했습니다. 한글 코드를 확인해주세요.")
+      getApiErrorMessage(data, "변환에 실패했습니다. 입력 코드를 확인해주세요.")
     );
   } catch (error) {
     setNotice(pythonOutput, error.message);
