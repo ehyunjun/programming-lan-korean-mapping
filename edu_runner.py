@@ -6,6 +6,7 @@
 import ast
 import multiprocessing
 import queue
+import re
 from contextlib import redirect_stdout
 
 
@@ -203,11 +204,95 @@ def make_output_truncated_message() -> str:
 
 def make_runtime_error_message(error: Exception) -> str:
     """실행 중 발생한 오류를 입문자가 읽기 쉬운 문장으로 바꾼다."""
+    if isinstance(error, NameError):
+        return make_name_error_message(error)
+
+    if isinstance(error, ZeroDivisionError):
+        return make_zero_division_error_message(error)
+
+    if isinstance(error, TypeError):
+        return make_type_error_message(error)
+
     return (
         "문제: 실행 중 오류가 발생했어요.\n"
         "\n"
         f"이유: {type(error).__name__}: {error}\n"
         "\n"
         "해결: 변수 이름이 맞는지, 문자열과 숫자를 잘못 더하지 않았는지,"
-        "함수 이름을 잘못 적지 않았는지 확인해보세요."
+        "함수 이름을 잘못 적지 않았는지 확인해보세요.\n"
+        "\n"
+        f"원래 오류: {type(error).__name__}: {error}"
+    )
+
+
+def make_name_error_message(error: NameError) -> str:
+    """정의되지 않은 이름을 사용할 때 보여줄 안내 메시지."""
+    missing_name = extract_name_from_name_error(error)
+    if missing_name:
+        reason = (
+            f"컴퓨터가 '{missing_name}'이라는 이름을 찾지 못했어요. "
+            "변수를 사용하기 전에 먼저 값을 넣어야 해요."
+        )
+    else:
+        reason = (
+            "컴퓨터가 사용한 이름을 찾지 못했어요. "
+            "변수를 사용하기 전에 먼저 값을 넣어야 해요."
+        )
+
+    return (
+        "문제: 이름을 찾지 못했어요.\n"
+        "\n"
+        f"이유: {reason}\n"
+        "\n"
+        "해결: 변수 이름에 오타가 없는지 확인하고, 사용하기 전에 값을 넣어보세요.\n"
+        "\n"
+        "예시:\n"
+        "이름 = \"현준\"\n"
+        "출력(이름)\n"
+        "\n"
+        f"원래 오류: NameError: {error}"
+    )
+
+
+def extract_name_from_name_error(error: NameError) -> str:
+    """NameError 메시지에서 찾지 못한 이름을 추출한다."""
+    match = re.search(r"name '(.+?)' is not defined", str(error))
+    if match:
+        return match.group(1)
+
+    return ""
+
+
+def make_zero_division_error_message(error: ZeroDivisionError) -> str:
+    """0으로 나누었을 때 보여줄 안내 메시지."""
+    return (
+        "문제: 숫자를 0으로 나눌 수 없어요.\n"
+        "\n"
+        "이유: 나누기에서 오른쪽 값이 0이면 계산할 수 없어요.\n"
+        "\n"
+        "해결: 나누는 값이 0이 아닌지 확인해보세요.\n"
+        "\n"
+        "예시:\n"
+        "점수 = 10 / 2\n"
+        "출력(점수)\n"
+        "\n"
+        f"원래 오류: ZeroDivisionError: {error}"
+    )
+
+
+def make_type_error_message(error: TypeError) -> str:
+    """서로 맞지 않는 값의 종류를 함께 쓸 때 보여줄 안내 메시지."""
+    return (
+        "문제: 서로 맞지 않는 종류의 값을 함께 사용했어요.\n"
+        "\n"
+        "이유: 문자열과 숫자를 바로 더하려고 했을 수 있어요.\n"
+        "\n"
+        "해결: 숫자는 따로 출력하거나, 필요할 때 문자열로 바꿔서 사용해보세요.\n"
+        "\n"
+        "예시:\n"
+        "나이 = 26\n"
+        "출력(\"나이:\")\n"
+        "출력(나이)\n"
+        "\n"
+        f"원래 오류: TypeError: {error}"
     )

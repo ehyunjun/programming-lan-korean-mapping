@@ -141,10 +141,35 @@ def run_tests() -> None:
         expected_kept_text="가" * 20,
     )
 
-    check_runtime_error(
-        "실행 중 오류 메시지",
+    check_runtime_error_contains(
+        "NameError 한국어 안내",
         "print(없는변수)",
-        "문제: 실행 중 오류가 발생했어요.",
+        [
+            "이름을 찾지 못",
+            "변수",
+            "오타",
+            "NameError",
+        ],
+    )
+
+    check_runtime_error_contains(
+        "ZeroDivisionError 한국어 안내",
+        "print(1 / 0)",
+        [
+            "0으로 나눌 수",
+            "ZeroDivisionError",
+        ],
+    )
+
+    check_runtime_error_contains(
+        "TypeError 한국어 안내",
+        'print("나이: " + 26)',
+        [
+            "종류",
+            "문자열",
+            "숫자",
+            "TypeError",
+        ],
     )
 
     check_runtime_error_contains(
