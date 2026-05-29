@@ -7,7 +7,13 @@
 BLOCK_KEYWORDS = ("만약", "동안", "반복", "정의", "아니면", "그외")
 
 
-def make_error_message(title: str, reason: str, solution: str, example: str = "") -> str:
+def make_error_message(
+    title: str,
+    reason: str,
+    solution: str,
+    example: str = "",
+    example_label: str = "예시:",
+) -> str:
     """오류 메시지 형식을 한 곳에서 통일한다."""
     parts = [
         f"문제: {title}",
@@ -18,7 +24,7 @@ def make_error_message(title: str, reason: str, solution: str, example: str = ""
     ]
 
     if example:
-        parts.extend(["", "예시:", example])
+        parts.extend(["", example_label, example])
 
     return "\n".join(parts)
 
@@ -221,10 +227,12 @@ def make_indent_needed_message() -> str:
     return make_error_message(
         title="본문 들여쓰기가 필요해요.",
         reason="':' 다음 줄에는 실제로 실행할 코드를 한 단계 들여써야 해요.",
-        solution=(
+        solution="아래처럼 안쪽 코드를 4칸 들여써주세요.",
+        example=(
             "반복 i 안에 범위(1, 6):\n"
             "    출력(i)"
         ),
+        example_label="올바른 예:",
     )
 
 def make_right_paren_missing_message() -> str:

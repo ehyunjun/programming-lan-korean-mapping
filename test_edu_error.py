@@ -9,6 +9,10 @@ from edu_api import compile_korean_to_python
 
 
 def check_error_contains(title: str, source: str, expected_text: str) -> None:
+    check_error_contains_all(title, source, [expected_text])
+
+
+def check_error_contains_all(title: str, source: str, expected_texts: list[str]) -> None:
     print(f"[오류 메시지 테스트] {title}")
 
     source = dedent(source).strip("\n")
@@ -22,10 +26,11 @@ def check_error_contains(title: str, source: str, expected_text: str) -> None:
     print(result.error)
     print()
 
-    if expected_text not in result.error:
-        raise AssertionError(
-            f"{title} 테스트 실패: {expected_text!r} 문구를 찾지 못했습니다."
-        )
+    for expected_text in expected_texts:
+        if expected_text not in result.error:
+            raise AssertionError(
+                f"{title} 테스트 실패: {expected_text!r} 문구를 찾지 못했습니다."
+            )
 
 
 def run_tests() -> None:
@@ -39,13 +44,20 @@ def run_tests() -> None:
         "콜론(:)이 빠졌어요.",
     )
 
-    check_error_contains(
+    check_error_contains_all(
         "본문 들여쓰기 누락",
         """
     만약 점수 >= 60:
     출력("합격")
     """,
-        "본문 들여쓰기가 필요해요.",
+        [
+            "본문 들여쓰기",
+            "4칸",
+            "들여써",
+            "올바른 예",
+            "반복 i 안에 범위(1, 6):",
+            "    출력(i)",
+        ],
     )
 
     check_error_contains(

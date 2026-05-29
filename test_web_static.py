@@ -77,6 +77,9 @@ REQUIRED_STYLE_TEXTS = [
     "token-string",
     "token-number",
     "token-comment",
+    "white-space: pre-wrap",
+    "line-height",
+    "monospace",
 ]
 
 
