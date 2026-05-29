@@ -99,6 +99,12 @@ def post_json(path: str, payload: dict[str, object]) -> tuple[int, dict[str, obj
     """JSON POST 요청을 보내고 status code와 JSON 응답을 반환한다."""
     url = BASE_URL + path
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    return post_raw(path, body)
+
+
+def post_raw(path: str, body: bytes) -> tuple[int, dict[str, object]]:
+    """원시 POST 본문을 보내고 status code와 JSON 응답을 반환한다."""
+    url = BASE_URL + path
     request = urllib.request.Request(
         url,
         data=body,
@@ -210,6 +216,102 @@ def check_compile_error() -> None:
     print("[통과] POST /api/compile 오류 응답 확인")
 
 
+def check_translate_korean_to_python() -> None:
+    status, data = post_json("/api/translate", {"source": '출력("안녕")'})
+    translated_code = data.get("translated_code")
+    if (
+        status != 200
+        or data.get("ok") is not True
+        or data.get("direction") != "ko_to_py"
+        or not isinstance(translated_code, str)
+        or "print(" not in translated_code
+        or "안녕" not in translated_code
+        or data.get("error") is not None
+    ):
+        raise ApiServerTestError(
+            "POST /api/translate 한글 → Python 응답이 기대와 다릅니다.\n"
+            f"status: {status}\n"
+            f"응답 JSON:\n{data}"
+        )
+
+    print("[통과] POST /api/translate 한글 → Python 응답 확인")
+
+
+def check_translate_python_to_korean() -> None:
+    status, data = post_json("/api/translate", {"source": 'print("안녕")'})
+    translated_code = data.get("translated_code")
+    if (
+        status != 200
+        or data.get("ok") is not True
+        or data.get("direction") != "py_to_ko"
+        or not isinstance(translated_code, str)
+        or '출력("안녕")' not in translated_code
+        or data.get("error") is not None
+    ):
+        raise ApiServerTestError(
+            "POST /api/translate Python → 한글 응답이 기대와 다릅니다.\n"
+            f"status: {status}\n"
+            f"응답 JSON:\n{data}"
+        )
+
+    print("[통과] POST /api/translate Python → 한글 응답 확인")
+
+
+def check_translate_python_with_korean_variable() -> None:
+    source = '이름 = "현준"\nprint(이름)'
+    status, data = post_json("/api/translate", {"source": source})
+    translated_code = data.get("translated_code")
+    if (
+        status != 200
+        or data.get("ok") is not True
+        or data.get("direction") != "py_to_ko"
+        or not isinstance(translated_code, str)
+        or '이름 = "현준"' not in translated_code
+        or "출력(이름)" not in translated_code
+    ):
+        raise ApiServerTestError(
+            "POST /api/translate 한글 변수명 Python 응답이 기대와 다릅니다.\n"
+            f"status: {status}\n"
+            f"응답 JSON:\n{data}"
+        )
+
+    print("[통과] POST /api/translate 한글 변수명 Python 응답 확인")
+
+
+def check_translate_missing_source_error() -> None:
+    status, data = post_json("/api/translate", {})
+    if (
+        status != 400
+        or data.get("ok") is not False
+        or data.get("direction") is not None
+        or data.get("translated_code") != ""
+        or data.get("error_type") != "BadRequest"
+    ):
+        raise ApiServerTestError(
+            "POST /api/translate source 누락 응답이 기대와 다릅니다.\n"
+            f"status: {status}\n"
+            f"응답 JSON:\n{data}"
+        )
+
+    print("[통과] POST /api/translate source 누락 응답 확인")
+
+
+def check_translate_invalid_json_error() -> None:
+    status, data = post_raw("/api/translate", b"{")
+    if (
+        status != 400
+        or data.get("ok") is not False
+        or data.get("error_type") != "BadRequest"
+    ):
+        raise ApiServerTestError(
+            "POST /api/translate 잘못된 JSON 응답이 기대와 다릅니다.\n"
+            f"status: {status}\n"
+            f"응답 JSON:\n{data}"
+        )
+
+    print("[통과] POST /api/translate 잘못된 JSON 응답 확인")
+
+
 def run_tests() -> None:
     server = start_server()
     try:
@@ -218,6 +320,11 @@ def run_tests() -> None:
         check_compile_success()
         check_run_success()
         check_compile_error()
+        check_translate_korean_to_python()
+        check_translate_python_to_korean()
+        check_translate_python_with_korean_variable()
+        check_translate_missing_source_error()
+        check_translate_invalid_json_error()
     finally:
         server.shutdown()
         server.server_close()

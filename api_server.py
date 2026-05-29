@@ -9,12 +9,14 @@
 from __future__ import annotations
 
 import json
+import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 from edu_api import compile_korean_to_python
 from edu_runner import run_python_code
+from python_to_korean import translate_python_to_korean
 
 
 HOST = "localhost"
@@ -35,6 +37,20 @@ MIME_TYPES = {
     ".js": "application/javascript; charset=utf-8",
     ".json": "application/json; charset=utf-8",
 }
+
+KOREAN_CODE_PATTERNS = [
+    re.compile(r"출력\s*\("),
+    re.compile(r"입력\s*\("),
+    re.compile(r"(?m)^\s*만약\s+"),
+    re.compile(r"(?m)^\s*아니면\s+"),
+    re.compile(r"(?m)^\s*그외\s*:"),
+    re.compile(r"(?m)^\s*동안\s+"),
+    re.compile(r"(?m)^\s*반복\s+"),
+    re.compile(r"(?m)^\s*정의\s+"),
+    re.compile(r"(?m)^\s*반환(?:\s+|$)"),
+    re.compile(r"안에\s+범위\s*\("),
+    re.compile(r"(?<![A-Za-z0-9_가-힣])(참|거짓|없음)(?![A-Za-z0-9_가-힣])"),
+]
 
 
 class EduApiHandler(BaseHTTPRequestHandler):
@@ -62,6 +78,10 @@ class EduApiHandler(BaseHTTPRequestHandler):
 
         if path == "/api/run":
             self.handle_run()
+            return
+
+        if path == "/api/translate":
+            self.handle_translate()
             return
 
         self.send_json(
@@ -140,6 +160,72 @@ class EduApiHandler(BaseHTTPRequestHandler):
             }
         )
 
+    def handle_translate(self) -> None:
+        body = self.read_json_body()
+        if body is None:
+            return
+
+        source = body.get("source")
+        if not isinstance(source, str):
+            self.send_json(
+                {
+                    "ok": False,
+                    "direction": None,
+                    "translated_code": "",
+                    "error": "source 값은 문자열이어야 합니다.",
+                    "error_type": "BadRequest",
+                },
+                status=400,
+            )
+            return
+
+        direction = detect_translate_direction(source)
+        if direction == "ko_to_py":
+            result = compile_korean_to_python(source)
+            if result.ok:
+                self.send_json(
+                    {
+                        "ok": True,
+                        "direction": direction,
+                        "translated_code": result.python_code,
+                        "error": None,
+                    }
+                )
+                return
+
+            self.send_json(
+                {
+                    "ok": False,
+                    "direction": direction,
+                    "translated_code": "",
+                    "error": result.error,
+                    "error_type": result.error_type,
+                }
+            )
+            return
+
+        result = translate_python_to_korean(source)
+        if result.ok:
+            self.send_json(
+                {
+                    "ok": True,
+                    "direction": direction,
+                    "translated_code": result.korean_code,
+                    "error": None,
+                }
+            )
+            return
+
+        self.send_json(
+            {
+                "ok": False,
+                "direction": direction,
+                "translated_code": "",
+                "error": result.error,
+                "error_type": result.error_type,
+            }
+        )
+
     def read_json_body(self) -> dict[str, object] | None:
         try:
             content_length = int(self.headers.get("Content-Length", "0"))
@@ -214,6 +300,15 @@ def main() -> int:
         server.server_close()
 
     return 0
+
+
+def detect_translate_direction(source: str) -> str:
+    """입력 코드가 한글 edu-v1 코드인지 Python 코드인지 가볍게 판단한다."""
+    for pattern in KOREAN_CODE_PATTERNS:
+        if pattern.search(source):
+            return "ko_to_py"
+
+    return "py_to_ko"
 
 
 if __name__ == "__main__":
