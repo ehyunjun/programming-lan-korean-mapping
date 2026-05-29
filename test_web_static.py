@@ -22,6 +22,8 @@ REQUIRED_INDEX_TEXTS = [
     "자동 변환하기",
     "실행하기",
     "예제 코드 다시 불러오기",
+    "코드 미리보기",
+    "codePreview",
     "1단계: 왼쪽에서 학습할 예제를 고릅니다.",
     "2단계: 한글 코드나 Python 코드를 읽거나 직접 고쳐봅니다.",
     "3단계: 자동 변환하기 또는 실행하기 버튼을 눌러 결과를 확인합니다.",
@@ -51,6 +53,13 @@ REQUIRED_MAIN_JS_TEXTS = [
     "direction",
     "한글 코드 → Python 코드",
     "Python 코드 → 한글 코드",
+    "keydown",
+    "Tab",
+    "shiftKey",
+    "updateCodePreview",
+    "escapeHtml",
+    "highlightCode",
+    "codePreview",
     "resetLessonButton",
     "먼저 lesson을 선택해주세요.",
     "새 lesson을 불러왔어요. 자동 변환하기를 누르면 변환 결과가 여기에 보여요.",
@@ -58,6 +67,16 @@ REQUIRED_MAIN_JS_TEXTS = [
     "예제 코드를 다시 불러왔어요. 자동 변환하기 또는 실행하기로 다시 확인해보세요.",
     "아직 변환 API가 연결되지 않았습니다.",
     "아직 실행 API가 연결되지 않았습니다.",
+]
+
+REQUIRED_STYLE_TEXTS = [
+    "code-preview-panel",
+    "code-preview-box",
+    "token-keyword",
+    "token-function",
+    "token-string",
+    "token-number",
+    "token-comment",
 ]
 
 
@@ -116,6 +135,7 @@ def run_tests() -> None:
         check_file_exists(path)
 
     index_html = read_text(INDEX_PATH)
+    style_css = read_text(STYLE_PATH)
     main_js = read_text(MAIN_JS_PATH)
 
     check_index_links(index_html)
@@ -125,6 +145,9 @@ def run_tests() -> None:
 
     for text in REQUIRED_MAIN_JS_TEXTS:
         check_contains(main_js, text, file_label="web/main.js")
+
+    for text in REQUIRED_STYLE_TEXTS:
+        check_contains(style_css, text, file_label="web/style.css")
 
     print()
     print("모든 web 정적 파일 검사가 끝났습니다.")
