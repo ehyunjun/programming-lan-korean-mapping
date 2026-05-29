@@ -11,6 +11,7 @@ import sys
 TEST_COMMANDS = [
     ("lesson 데이터 검사", [sys.executable, "test_lesson.py"]),
     ("입문자 친화 오류 메시지 검사", [sys.executable, "test_edu_error.py"]),
+    ("Python → 한글 변환 검사", [sys.executable, "test_python_to_korean.py"]),
     ("Python 실행 헬퍼 검사", [sys.executable, "test_edu_runner.py"]),
     ("CLI 변환/실행 검사", [sys.executable, "test_edu_cli.py"]),
     ("examples 예제 검사", [sys.executable, "test_examples.py"]),
